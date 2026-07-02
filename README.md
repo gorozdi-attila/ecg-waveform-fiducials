@@ -22,7 +22,7 @@ The methods will be evaluated on publicly available ECG databases using common p
  
 This project is under active development as part of a BSc thesis. Current progress:
  
-- [ ] Literature review
+- [x] Literature review
 - [ ] ECG preprocessing pipeline
 - [ ] R-peak detection — Pan-Tompkins algorithm
 - [ ] Full PQRST delineation — heuristic rules around R-peak
@@ -156,7 +156,7 @@ All methods are evaluated under identical preprocessing and sampling conditions.
 
 ## License
 
-This project is licensed under the MIT Liscense -e see the `LICENSE` file for details
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Author
 
