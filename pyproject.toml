@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ecg_waveform_fiducials"
+version = "0.1.0"
+description = "Automatic Detection of PQRST Fiducial Points in ECG Signals"
+readme = "README.md"
+requires-python = ">=3.10"
+
+license = { file = "LICENSE" }
+
+authors = [
+    { name = "Attila Görözdi", email = "gorozdiattila@gmail.com" }
+]
+
+dependencies = [
+    "PyYAML",
+    "numpy",
+    "pandas",
+    "scipy",
+    "seaborn",
+    "matplotlib",
+    "PyWavelets",
+    "torch",
+    "scikit-learn",
+    "wfdb"
+]
+
+[project.optional-dependencies]
+dev = [
+    "jupyter",
+    "ipykernel",
+    "pytest",
+    "ruff",
+    "black",
+    "mypy"
+]
+
+[project.urls]
+Repository = "https://github.com/gorozdi-attila/ecg-waveform-fiducials"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["ecg_waveform_fiducials*"]
