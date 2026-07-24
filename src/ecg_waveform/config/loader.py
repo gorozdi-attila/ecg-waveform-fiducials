@@ -1,11 +1,13 @@
 from pathlib import Path
+
 from typing import Any
 
 import yaml
 
 from .paths import CONFIGS_DIR
 
-def _load_yaml(filename: str) -> dict[str, Any]:
+
+def load_yaml(filename: str) -> dict[str, Any]:
     path: Path = CONFIGS_DIR / filename
 
     if not path.exists():

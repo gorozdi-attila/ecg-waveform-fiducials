@@ -1,7 +1,9 @@
 from functools import cache
+
 from pathlib import Path
 
 import wfdb
+
 
 def _project_root() -> Path:
     current = Path(__file__).resolve()
@@ -16,7 +18,7 @@ PROJECT_ROOT: Path = _project_root()
 CONFIGS_DIR: Path = PROJECT_ROOT / "configs"
 DATA_DIR: Path = PROJECT_ROOT / "data"
 
-MITBIH_DIR: Path = DATA_DIR / "mitbih"
+MITDB_DIR: Path = DATA_DIR / "mitdb"
 LUDB_DIR: Path = DATA_DIR / "ludb"
 
 RESULTS_DIR: Path = PROJECT_ROOT / "results"
@@ -25,7 +27,7 @@ RESULTS_DIR: Path = PROJECT_ROOT / "results"
 DIRECTORIES: tuple[Path] = (
     CONFIGS_DIR,
     DATA_DIR,
-    MITBIH_DIR,
+    MITDB_DIR,
     LUDB_DIR,
     RESULTS_DIR,
 )
@@ -37,7 +39,7 @@ def ensure_directories() -> None:
 
 
 @cache
-def get_mitbih_record_names() -> list[str]:
+def get_mitdb_record_names() -> list[str]:
     return wfdb.get_record_list("mitdb")
 
 

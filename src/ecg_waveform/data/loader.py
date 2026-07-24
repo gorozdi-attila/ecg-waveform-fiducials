@@ -1,36 +1,39 @@
 from abc import ABC, abstractmethod
+
+from functools import lru_cache
+
 from pathlib import Path
+
 from typing import Callable
 
 import numpy as np
+
 import wfdb
 
-from .entities import (
-    ECGRecord,
-    ECGSignal,
-    ECGAnnotation,
-)
+from ecg_waveform.core import ECGRecord, ECGSignal, ECGAnnotation
 
-type AnnotationMap = dict[int | str, str]
+
+class BaseDataLoader(ABC):
+    def __init__(self, dataset_root: Path) -> None:
+        self.dataset_root = Path(dataset_root)
+
+    @lru_cache(maxsize=None)
+    @abstractmethod
+    def __getitem__(self, record_name: str) -> ECGRecord: ...
+
 
 AnnotationExtension = (
-    str
-    | AnnotationMap
-    | Callable[[int, str | None], str | None]
-    | None
+    str | dict[int | str, str] | Callable[[int, str | None], str | None] | None
 )
 
-class DataLoader(ABC):
-    def __init__(self, dataset_root: Path, annotation_extension: AnnotationExtension = None):
-        self.dataset_root = Path(dataset_root)
+
+class WFDBLoader(BaseDataLoader):
+    def __init__(
+        self, dataset_root: Path, annotation_extension: AnnotationExtension = None
+    ):
+        super().__init__(dataset_root)
         self.annotation_extension = annotation_extension
 
-    @abstractmethod
-    def __getitem__(self, record_name: str) -> ECGRecord:
-        ...
-
-
-class WFDBLoader(DataLoader):
     def _resolve_extension(self, channel: int, lead_name: str | None) -> str | None:
         match self.annotation_extension:
             case None:
@@ -48,7 +51,9 @@ class WFDBLoader(DataLoader):
                     f"Invalid annotation_extension type: {type(self.annotation_extension)!r}"
                 )
 
-    def _load_annotation(self, record_path: Path, extension: str, channel: int) -> ECGAnnotation:
+    def _load_annotation(
+        self, record_path: Path, extension: str, channel: int
+    ) -> ECGAnnotation:
         try:
             annotation = wfdb.rdann(str(record_path), extension)
         except Exception as e:
@@ -70,6 +75,7 @@ class WFDBLoader(DataLoader):
 
         return ECGAnnotation(symbol=symbol, sample=sample)
 
+    @lru_cache(maxsize=None)
     def __getitem__(self, record_name: str) -> ECGRecord:
         record_path = self.dataset_root / record_name
         record = wfdb.rdrecord(str(record_path))
@@ -85,7 +91,7 @@ class WFDBLoader(DataLoader):
 
             signal = ECGSignal(
                 sample=np.asarray(record.p_signal[:, channel]),
-                sample_rate=float(record.fs),
+                sample_rate=int(record.fs),
                 channel=channel,
                 lead_name=lead_name,
                 annotation=annotation,

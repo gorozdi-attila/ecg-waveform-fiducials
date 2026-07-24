@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ecg_waveform_fiducials"
+name = "ecg_waveform"
 version = "0.1.0"
 description = "Automatic Detection of PQRST Fiducial Points in ECG Signals"
 readme = "README.md"
@@ -43,4 +43,4 @@ Repository = "https://github.com/gorozdi-attila/ecg-waveform-fiducials"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["ecg_waveform_fiducials*"]
+include = ["ecg_waveform*"]

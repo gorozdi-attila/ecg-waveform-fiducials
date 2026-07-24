@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import pandas as pd
 
 DEFAULT_RCPARAMS: dict = {
     "figure.figsize": (12, 4),
@@ -17,23 +16,20 @@ DEFAULT_RCPARAMS: dict = {
     "xtick.direction": "out",
     "ytick.direction": "out",
     "axes.grid": True,
-    "grid.alpha": 0.4,
-    "grid.linewidth": 0.5,
-    "grid.color": "#808080",
+    "grid.linewidth": 0.3,
+    "grid.color": "black",
     "legend.fontsize": 10,
     "legend.frameon": True,
-    "legend.loc": "lower left",
-    "lines.linewidth": 1.2,
+    "legend.loc": "upper right",
+    "lines.linewidth": 0.5,
     "axes.spines.top": False,
     "axes.spines.right": False,
+    "axes.edgecolor": "black",
+    "axes.linewidth": 0.8,
 }
+
 
 def set_style(rc_params: dict | None = None) -> None:
     plt.style.use("seaborn-v0_8-whitegrid")
 
     plt.rcParams.update(rc_params or DEFAULT_RCPARAMS)
-
-    pd.set_option("display.max_rows", None)
-    pd.set_option("display.max_columns", None)
-    pd.set_option("display.width", None)
-    pd.set_option("display.max_colwidth", None)

@@ -1,0 +1,452 @@
+from collections.abc import Callable
+
+from functools import wraps
+
+import numpy as np
+
+import seaborn as sns
+
+import matplotlib.pyplot as plt
+
+from ecg_waveform.core import ECGSignal, ECGAnnotation
+
+from ecg_waveform.utils import (
+    compute_window,
+    compute_baseline,
+    compute_rr_intervals,
+    compute_psd,
+    compute_fft,
+    compute_spectrogram,
+    compute_wavelet,
+)
+
+
+def _get_axes(
+    ax: plt.Axes | None,
+) -> tuple[plt.Figure, plt.Axes, bool]:
+    if ax is None:
+        fig, ax = plt.subplots()
+        return fig, ax, True
+
+    return ax.figure, ax, False
+
+
+def _get_segment(
+    signal: ECGSignal,
+    start_sec: float,
+    interval_sec: float,
+) -> tuple[ECGSignal, np.ndarray, int, int]:
+    start, end = compute_window(
+        len(signal),
+        signal.sample_rate,
+        start_sec,
+        interval_sec,
+    )
+
+    segment = signal.segment(start, end)
+    time = segment.time + start / signal.sample_rate
+
+    return segment, time, start, end
+
+
+def with_axes(plot_fn: Callable):
+    @wraps(plot_fn)
+    def wrapper(*args, ax: plt.Axes | None = None, **kwargs):
+        fig, ax, created = _get_axes(ax)
+
+        ax.grid(which="major", linewidth=0.8, color="lightgray")
+        ax.grid(which="minor", linewidth=0.3, color="lightgray")
+        ax.minorticks_on()
+
+        plot_fn(*args, ax=ax, **kwargs)
+
+        if created:
+            fig.tight_layout()
+
+        return fig, ax
+
+    return wrapper
+
+
+@with_axes
+def plot_signal(
+    signal: ECGSignal,
+    start_sec: float = 0,
+    interval_sec: float = 10,
+    show_annotation: bool = True,
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    segment, time, start, _ = _get_segment(
+        signal,
+        start_sec,
+        interval_sec,
+    )
+
+    window_start = start / signal.sample_rate
+
+    ax.plot(time, segment.sample, label="ECG Signal")
+
+    if (
+        show_annotation
+        and segment.annotation is not None
+        and len(segment.annotation.sample) > 0
+    ):
+        ann_x = segment.annotation.sample / segment.sample_rate + window_start
+        ann_y = segment.sample[segment.annotation.sample]
+
+        ax.scatter(
+            ann_x,
+            ann_y,
+            s=30,
+            color="red",
+            zorder=3,
+            label="Annotated Points",
+        )
+
+        offset = 0.05 * (segment.sample.max() - segment.sample.min())
+
+        for x, y, sym in zip(ann_x, ann_y, segment.annotation.symbol):
+            ax.text(
+                x,
+                y + offset,
+                sym,
+                fontsize=8,
+                ha="center",
+                weight="bold",
+            )
+
+    ax.set_title(f"ECG Signal — {signal.lead_name} lead — {start_sec:.2f}-{(start_sec + interval_sec):.2f} s")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Amplitude (mV)")
+    ax.legend()
+
+
+@with_axes
+def plot_amplitude_distribution(
+    signal: ECGSignal,
+    physiological_limit_mv: float = 5.0,
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    sns.histplot(
+        signal.sample,
+        bins="auto",
+        kde=True,
+        linewidth=0,
+        ax=ax,
+        label="Amplitude distribution",
+    )
+
+    ax.axvline(
+        -physiological_limit_mv,
+        color="red",
+        linestyle="--",
+        label=f"Min threshold ({-physiological_limit_mv} mV)",
+    )
+    ax.axvline(
+        physiological_limit_mv,
+        color="red",
+        linestyle="--",
+        label=f"Max threshold ({physiological_limit_mv} mV)",
+    )
+
+    ax.set_title("Amplitude distribution")
+    ax.set_xlabel("Amplitude (mV)")
+    ax.set_ylabel("Count")
+    ax.legend()
+
+
+@with_axes
+def plot_beat_overlays(
+    signal: ECGSignal,
+    r_peaks: ECGAnnotation,
+    window_ms: tuple[int, int] = (200, 400),
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    left = int(round(window_ms[0] * signal.sample_rate / 1000))
+    right = int(round(window_ms[1] * signal.sample_rate / 1000))
+
+    beats = [
+        signal.sample[r - left : r + right]
+        for r in r_peaks.sample
+        if r - left >= 0 and r + right <= len(signal)
+    ]
+
+    if not beats:
+        raise ValueError("No valid beats found in the given window.")
+
+    beats_arr = np.asarray(beats)
+
+    mean_beat = beats_arr.mean(axis=0)
+    std_beat = beats_arr.std(axis=0)
+
+    time = (np.arange(beats_arr.shape[1]) - left) / signal.sample_rate * 1000
+
+    ax.plot(
+        time,
+        mean_beat,
+        label="Mean beat",
+    )
+
+    ax.fill_between(
+        time,
+        mean_beat - std_beat,
+        mean_beat + std_beat,
+        alpha=0.25,
+        label="±1 SD",
+    )
+
+    ax.axvline(
+        0,
+        color="red",
+        linestyle="--",
+        label="R-peak",
+    )
+
+    ax.set_title(f"ECG Beat Overlay ({len(beats_arr)} beats)")
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("Amplitude")
+    ax.legend()
+
+
+@with_axes
+def plot_rr_tachogram(
+    signal: ECGSignal,
+    r_peaks: ECGAnnotation,
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    rr_intervals = compute_rr_intervals(signal, r_peaks)
+    beat_idx = np.arange(1, len(r_peaks.sample))
+
+    ax.plot(
+        beat_idx,
+        rr_intervals,
+        "-o",
+        markersize=3,
+        label="RR interval",
+    )
+
+    ax.set_title("RR Tachogram")
+    ax.set_xlabel("Beat index")
+    ax.set_ylabel("RR interval (ms)")
+    ax.legend()
+
+
+@with_axes
+def plot_rr_distribution(
+    signal: ECGSignal,
+    r_peaks: ECGAnnotation,
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    rr_intervals = compute_rr_intervals(signal, r_peaks)
+
+    sns.histplot(
+        rr_intervals,
+        bins="auto",
+        kde=True,
+        linewidth=0,
+        ax=ax,
+        label="RR interval distribution",
+    )
+
+    ax.set_title(f"HRV Distribution — Mean: {np.mean(rr_intervals):.2f} ms")
+    ax.set_xlabel("RR Interval (ms)")
+    ax.set_ylabel("Count")
+    ax.legend()
+
+
+@with_axes
+def plot_poincare(
+    signal: ECGSignal,
+    r_peaks: ECGAnnotation,
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    
+    
+    rr_intervals = compute_rr_intervals(signal, r_peaks)
+
+    ax.scatter(
+        rr_intervals[:-1],
+        rr_intervals[1:],
+        s=30,
+        label="RRₙ vs RRₙ₊₁",
+    )
+
+    min_rr, max_rr = np.min(rr_intervals), np.max(rr_intervals)
+    ax.plot(
+        [min_rr, max_rr],
+        [min_rr, max_rr],
+        "r--",
+    )
+
+    ax.set_title("Poincaré Plot")
+    ax.set_xlabel("RRₙ (ms)")
+    ax.set_ylabel("RRₙ₊₁ (ms)")
+    ax.legend()
+
+    ax.set_aspect("auto")
+
+
+@with_axes
+def plot_spectrogram(
+    signal: ECGSignal,
+    nperseg: int = 256,
+    noverlap: int = 200,
+    scaling: str = "density",
+    mode: str = "magnitude",
+    start_sec: float = 0,
+    interval_sec: float = 10,
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    segment, _, start, _ = _get_segment(
+        signal,
+        start_sec,
+        interval_sec,
+    )
+
+    freqs, time, S = compute_spectrogram(
+        segment,
+        nperseg=nperseg,
+        noverlap=noverlap,
+        scaling=scaling,
+        mode=mode,
+    )
+
+    S_db = 10 * np.log10(np.maximum(S, 1e-12))
+
+    window_start = start / segment.sample_rate
+
+    time = time + window_start
+
+    fig = ax.figure
+
+    im = ax.pcolormesh(
+        time,
+        freqs,
+        S_db,
+        shading="auto",
+        cmap="cividis",
+    )
+
+    fig.colorbar(
+        im,
+        ax=ax,
+        label="Power (dB)",
+    )
+
+    ax.set_title(f"Spectrogram — {start_sec:.2f}-{(start_sec + interval_sec):.2f} s")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Frequency (Hz)")
+
+
+@with_axes
+def plot_wavelet_scalogram(
+    signal: ECGSignal,
+    wavelet: str = "morl",
+    start_sec: float = 0,
+    interval_sec: float = 10,
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    segment, time, _, _ = _get_segment(
+        signal,
+        start_sec,
+        interval_sec,
+    )
+
+    coef, freqs = compute_wavelet(
+        segment,
+        wavelet=wavelet,
+    )
+
+    power = np.abs(coef)
+
+    fig = ax.figure
+
+    im = ax.imshow(
+        power,
+        extent=[time[0], time[-1], freqs[-1], freqs[0]],
+        aspect="auto",
+        cmap="cividis",
+        origin="upper",
+    )
+
+    fig.colorbar(
+        im,
+        ax=ax,
+        label="Magnitude",
+    )
+
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Frequency (Hz)")
+    ax.set_title(f"Wavelet Scalogram ({wavelet}) — {start_sec:.2f}-{(start_sec + interval_sec):.2f} s")
+
+
+@with_axes
+def plot_baseline_wander(
+    signal: ECGSignal,
+    window1_ms: int = 200,
+    window2_ms: int = 600,
+    start_sec: float = 0,
+    interval_sec: float = 10,
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    segment, time, _, _ = _get_segment(
+        signal,
+        start_sec,
+        interval_sec,
+    )
+
+    baseline = compute_baseline(
+        segment,
+        window1_ms=window1_ms,
+        window2_ms=window2_ms,
+    )
+
+    ax.plot(
+        time,
+        baseline,
+        color="red",
+        label="Estimated Baseline",
+    )
+
+    ax.set_title(
+        f"Baseline Wander — {start_sec:.2f}-{(start_sec + interval_sec):.2f} s"
+    )
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Amplitude (mV)")
+    ax.legend()
+
+
+@with_axes
+def plot_fft(
+    signal: ECGSignal,
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    freqs, magnitude = compute_fft(signal)
+
+    ax.plot(freqs, magnitude)
+
+    ax.set_xlabel("Frequency (Hz)")
+    ax.set_ylabel("Amplitude")
+    ax.set_title("FFT Magnitude Spectrum")
+
+
+@with_axes
+def plot_psd(
+    signal: ECGSignal,
+    nperseg: int | None = None,
+    window: str = "hann",
+    noverlap: int | None = None,
+    ax: plt.Axes | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    freqs, psd = compute_psd(
+        signal,
+        nperseg=nperseg,
+        window=window,
+        noverlap=noverlap,
+    )
+
+    ax.semilogy(freqs, psd)
+
+    ax.set_xlabel("Frequency (Hz)")
+    ax.set_ylabel("PSD (mV²/Hz)")
+    ax.set_title("Power Spectral Density")

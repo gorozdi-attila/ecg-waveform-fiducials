@@ -1,17 +1,19 @@
 import shutil
+
 import sys
 
 from argparse import ArgumentParser
+
 from pathlib import Path
 
 import wfdb
 
-from ecg_waveform_fiducials.config import LUDB_DIR, MITBIH_DIR
+from ecg_waveform.config import LUDB_DIR, MITDB_DIR
 
 _MARKER_NAME = ".download_complete"
 
 DATABASES: dict[str, Path] = {
-    "mitdb": MITBIH_DIR,
+    "mitdb": MITDB_DIR,
     "ludb": LUDB_DIR,
 }
 

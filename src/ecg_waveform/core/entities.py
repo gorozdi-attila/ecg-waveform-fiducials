@@ -1,7 +1,15 @@
+from functools import cached_property
+
+from dataclasses import dataclass
+
+from collections.abc import Iterator
+
 import numpy as np
 
-from functools import cached_property
-from dataclasses import dataclass
+from math import gcd
+
+from scipy.signal import resample_poly
+
 
 @dataclass(frozen=True, eq=False, repr=False)
 class ECGAnnotation:
@@ -45,7 +53,7 @@ class ECGAnnotation:
 @dataclass(frozen=True, eq=False)
 class ECGSignal:
     sample: np.ndarray
-    sample_rate: float
+    sample_rate: int
     channel: int
     lead_name: str
     annotation: ECGAnnotation | None = None
@@ -70,30 +78,32 @@ class ECGSignal:
                 raise ValueError("Annotation contains negative sample indices")
             if np.any(self.annotation.sample >= self.n_samples):
                 raise ValueError("Annotation outside signal")
-        
+
     def __len__(self) -> int:
         return self.n_samples
-    
+
     def __repr__(self) -> str:
-        ann_info = f", annotation={self.annotation!r}" if self.annotation is not None else ""
+        ann_info = (
+            f", annotation={self.annotation!r}" if self.annotation is not None else ""
+        )
         return (
             f"ECGSignal(channel={self.channel}, lead_name={self.lead_name!r}, "
             f"n_samples={self.n_samples}, sample_rate={self.sample_rate}, "
             f"duration={self.duration:.2f}s{ann_info})"
-        )    
+        )
 
     @property
     def n_samples(self) -> int:
         return len(self.sample)
-    
+
     @property
     def duration(self) -> float:
         return len(self.sample) / self.sample_rate
-    
+
     @property
     def is_annotated(self) -> bool:
         return self.annotation is not None
-    
+
     @cached_property
     def time(self) -> np.ndarray:
         t = np.arange(self.n_samples) / self.sample_rate
@@ -106,7 +116,7 @@ class ECGSignal:
 
         sample_segment = self.sample[start:end]
         annotation_segment = None
-        
+
         if self.annotation is not None:
             mask = (self.annotation.sample >= start) & (self.annotation.sample < end)
             annotation_segment = ECGAnnotation(
@@ -119,14 +129,62 @@ class ECGSignal:
             sample_rate=self.sample_rate,
             channel=self.channel,
             lead_name=self.lead_name,
-            annotation=annotation_segment 
+            annotation=annotation_segment,
         )
 
-    
+    def resample(self, target_sample_rate: int) -> "ECGSignal":
+        if target_sample_rate <= 0:
+            raise ValueError("target_sample_rate must be positive")
+
+        if self.sample_rate == target_sample_rate:
+            return self
+
+        sr = int(round(self.sample_rate))
+        tsr = int(round(target_sample_rate))
+
+        g = gcd(sr, tsr)
+
+        samples = resample_poly(
+            self.sample,
+            up=tsr // g,
+            down=sr // g,
+        )
+
+        annotation = None
+        if self.annotation is not None:
+            new_indices = np.rint(
+                self.annotation.sample * target_sample_rate / self.sample_rate
+            ).astype(int)
+
+            new_indices = np.clip(new_indices, 0, len(samples) - 1)
+
+            annotation = ECGAnnotation(
+                symbol=self.annotation.symbol,
+                sample=new_indices,
+            )
+
+        return ECGSignal(
+            sample=samples,
+            sample_rate=target_sample_rate,
+            channel=self.channel,
+            lead_name=self.lead_name,
+            annotation=annotation,
+        )
+
+    def with_sample(self, sample: np.ndarray) -> "ECGSignal":
+        return ECGSignal(
+            sample=sample,
+            sample_rate=self.sample_rate,
+            channel=self.channel,
+            lead_name=self.lead_name,
+            annotation=self.annotation,
+        )
+
+
 @dataclass(frozen=True, eq=False)
 class ECGRecord:
     record_name: str | None
-    signals: list[ECGSignal]
+    signals: tuple[ECGSignal]
 
     def __post_init__(self):
         if not self.signals:
@@ -141,19 +199,35 @@ class ECGRecord:
             raise ValueError(
                 f"All signals in a record must share the same sample_rate, got {sample_rates}"
             )
-        
+
         lengths = {s.n_samples for s in self.signals}
         if len(lengths) > 1:
-            raise ValueError(
-                f"Signals have different lengths: {sorted(lengths)}"
-            )
-            
+            raise ValueError(f"Signals have different lengths: {sorted(lengths)}")
+
+    def __len__(self) -> int:
+        return len(self.signals)
+
+    def __iter__(self) -> Iterator[ECGSignal]:
+        return iter(self.signals)
+
     def __repr__(self) -> str:
         return (
             f"ECGRecord(record_name={self.record_name!r}, "
             f"channels={[s.channel for s in self.signals]}, "
             f"leads={self.lead_names})"
-        )    
+        )
+
+    @property
+    def n_samples(self) -> int:
+        return self.signals[0].n_samples
+
+    @property
+    def sample_rate(self) -> int:
+        return self.signals[0].sample_rate
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        return len(self.signals), self.n_samples
 
     @property
     def lead_names(self) -> list[str | None]:

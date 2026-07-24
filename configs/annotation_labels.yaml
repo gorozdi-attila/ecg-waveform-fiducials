@@ -1,0 +1,23 @@
+p_peaks:
+  - p
+
+r_peaks:
+  - N
+  - L
+  - R
+  - A
+  - a
+  - J
+  - S
+  - V
+  - E
+  - F
+  - /
+  - f
+  - Q
+  - e
+  - j
+  - r
+
+t_peaks:
+  - t
