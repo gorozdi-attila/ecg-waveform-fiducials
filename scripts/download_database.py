@@ -1,9 +1,6 @@
 import shutil
-
 import sys
-
 from argparse import ArgumentParser
-
 from pathlib import Path
 
 import wfdb

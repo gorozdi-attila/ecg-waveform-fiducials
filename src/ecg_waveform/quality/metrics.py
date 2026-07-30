@@ -1,9 +1,7 @@
 import numpy as np
-
 from scipy.stats import kurtosis
 
 from ecg_waveform.core import ECGSignal
-
 from ecg_waveform.utils import compute_baseline, compute_psd
 
 

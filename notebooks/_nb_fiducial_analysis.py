@@ -1,16 +1,15 @@
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 from IPython.display import display
 
 from ecg_waveform.config import load_yaml
-from ecg_waveform.data import WFDBLoader
 from ecg_waveform.core import ECGAnnotation
-
+from ecg_waveform.data import WFDBLoader
 
 FIDUCIAL_INTERVALS = load_yaml("fiducial_normal_ranges.yaml")
 SUMMARY_PRECISION = 3
@@ -286,4 +285,5 @@ def plot_fiducials_distributions(
     )
 
     plt.tight_layout()
-    plt.show()
+
+    return fig, axes

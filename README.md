@@ -23,7 +23,7 @@ The methods will be evaluated on publicly available ECG databases using common p
 This project is under active development as part of a BSc thesis. Current progress:
  
 - [x] Literature review
-- [ ] ECG preprocessing pipeline
+- [x] ECG preprocessing pipeline
 - [ ] R-peak detection — Pan-Tompkins algorithm
 - [ ] Full PQRST delineation — heuristic rules around R-peak
 - [ ] Wavelet transform-based PQRST detection

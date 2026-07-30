@@ -1,8 +1,6 @@
 import numpy as np
-
-from scipy.signal import savgol_filter, medfilt
-
 import pywt
+from scipy.signal import medfilt, savgol_filter
 
 from ecg_waveform.core import ECGSignal
 
@@ -12,7 +10,9 @@ def wavelet_denoise(
     wavelet: str = "db4",
     level: int = 4,
 ) -> ECGSignal:
-    coeffs = pywt.wavedec(signal.sample, wavelet, level=level)
+    x = signal.sample.copy()
+
+    coeffs = pywt.wavedec(x, wavelet, level=level)
 
     sigma = np.median(np.abs(coeffs[-1])) / 0.6745
     threshold = sigma * np.sqrt(2 * np.log(len(signal)))
@@ -21,7 +21,7 @@ def wavelet_denoise(
         pywt.threshold(c, threshold, mode="soft") for c in coeffs[1:]
     ]
 
-    return signal.with_sample(pywt.waverec(denoised, wavelet)[: len(signal)])
+    return signal.with_sample(pywt.waverec(denoised, wavelet)[: len(x)])
 
 
 def savgol_smooth(

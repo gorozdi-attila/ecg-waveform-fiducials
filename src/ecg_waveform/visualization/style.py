@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 DEFAULT_RCPARAMS: dict = {
-    "figure.figsize": (12, 4),
+    "figure.figsize": (12, 3),
     "figure.dpi": 300,
     "savefig.dpi": 300,
     "savefig.bbox": "tight",

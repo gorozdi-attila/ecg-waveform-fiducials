@@ -1,7 +1,7 @@
 from .entities import (
+    ECGAnnotation,
     ECGRecord,
     ECGSignal,
-    ECGAnnotation,
 )
 
 __all__ = [

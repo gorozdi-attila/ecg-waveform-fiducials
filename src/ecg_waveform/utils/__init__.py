@@ -1,11 +1,11 @@
 from .helper import (
-    compute_window,
     compute_baseline,
-    compute_rr_intervals,
-    compute_psd,
     compute_fft,
+    compute_psd,
+    compute_rr_intervals,
     compute_spectrogram,
-    compute_wavelet
+    compute_wavelet,
+    compute_window,
 )
 
 __all__ = [

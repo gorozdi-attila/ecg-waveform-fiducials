@@ -1,23 +1,19 @@
 from collections.abc import Callable
-
 from functools import wraps
 
+import matplotlib.pyplot as plt
 import numpy as np
-
 import seaborn as sns
 
-import matplotlib.pyplot as plt
-
-from ecg_waveform.core import ECGSignal, ECGAnnotation
-
+from ecg_waveform.core import ECGAnnotation, ECGSignal
 from ecg_waveform.utils import (
-    compute_window,
     compute_baseline,
-    compute_rr_intervals,
-    compute_psd,
     compute_fft,
+    compute_psd,
+    compute_rr_intervals,
     compute_spectrogram,
     compute_wavelet,
+    compute_window,
 )
 
 
@@ -76,7 +72,7 @@ def plot_signal(
     show_annotation: bool = True,
     ax: plt.Axes | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
-    segment, time, start, _ = _get_segment(
+    segment, time, start, end = _get_segment(
         signal,
         start_sec,
         interval_sec,
@@ -115,9 +111,9 @@ def plot_signal(
                 weight="bold",
             )
 
-    ax.set_title(f"ECG Signal — {signal.lead_name} lead — {start_sec:.2f}-{(start_sec + interval_sec):.2f} s")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Amplitude (mV)")
+    ax.set_title(f"ECG Signal — {signal.lead_name} lead — {start/signal.sample_rate:.2f}-{(end/signal.sample_rate):.2f} s")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Amplitude [mV]")
     ax.legend()
 
 
@@ -150,7 +146,7 @@ def plot_amplitude_distribution(
     )
 
     ax.set_title("Amplitude distribution")
-    ax.set_xlabel("Amplitude (mV)")
+    ax.set_xlabel("Amplitude [mV]")
     ax.set_ylabel("Count")
     ax.legend()
 
@@ -162,8 +158,8 @@ def plot_beat_overlays(
     window_ms: tuple[int, int] = (200, 400),
     ax: plt.Axes | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
-    left = int(round(window_ms[0] * signal.sample_rate / 1000))
-    right = int(round(window_ms[1] * signal.sample_rate / 1000))
+    left = round(window_ms[0] * signal.sample_rate / 1000)
+    right = round(window_ms[1] * signal.sample_rate / 1000)
 
     beats = [
         signal.sample[r - left : r + right]
@@ -203,8 +199,8 @@ def plot_beat_overlays(
     )
 
     ax.set_title(f"ECG Beat Overlay ({len(beats_arr)} beats)")
-    ax.set_xlabel("Time (ms)")
-    ax.set_ylabel("Amplitude")
+    ax.set_xlabel("Time [ms]")
+    ax.set_ylabel("Amplitude [mV]")
     ax.legend()
 
 
@@ -227,7 +223,7 @@ def plot_rr_tachogram(
 
     ax.set_title("RR Tachogram")
     ax.set_xlabel("Beat index")
-    ax.set_ylabel("RR interval (ms)")
+    ax.set_ylabel("RR interval [ms]")
     ax.legend()
 
 
@@ -249,7 +245,7 @@ def plot_rr_distribution(
     )
 
     ax.set_title(f"HRV Distribution — Mean: {np.mean(rr_intervals):.2f} ms")
-    ax.set_xlabel("RR Interval (ms)")
+    ax.set_xlabel("RR Interval [ms]")
     ax.set_ylabel("Count")
     ax.legend()
 
@@ -279,8 +275,8 @@ def plot_poincare(
     )
 
     ax.set_title("Poincaré Plot")
-    ax.set_xlabel("RRₙ (ms)")
-    ax.set_ylabel("RRₙ₊₁ (ms)")
+    ax.set_xlabel("RRₙ [ms]")
+    ax.set_ylabel("RRₙ₊₁ [ms]")
     ax.legend()
 
     ax.set_aspect("auto")
@@ -297,7 +293,7 @@ def plot_spectrogram(
     interval_sec: float = 10,
     ax: plt.Axes | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
-    segment, _, start, _ = _get_segment(
+    segment, _, start, end = _get_segment(
         signal,
         start_sec,
         interval_sec,
@@ -330,12 +326,12 @@ def plot_spectrogram(
     fig.colorbar(
         im,
         ax=ax,
-        label="Power (dB)",
+        label="Power [dB]",
     )
 
-    ax.set_title(f"Spectrogram — {start_sec:.2f}-{(start_sec + interval_sec):.2f} s")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Frequency (Hz)")
+    ax.set_title(f"Spectrogram — {start/signal.sample_rate:.2f}-{(end/signal.sample_rate):.2f} s")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Frequency [Hz]")
 
 
 @with_axes
@@ -346,7 +342,7 @@ def plot_wavelet_scalogram(
     interval_sec: float = 10,
     ax: plt.Axes | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
-    segment, time, _, _ = _get_segment(
+    segment, time, start, end = _get_segment(
         signal,
         start_sec,
         interval_sec,
@@ -375,9 +371,9 @@ def plot_wavelet_scalogram(
         label="Magnitude",
     )
 
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Frequency (Hz)")
-    ax.set_title(f"Wavelet Scalogram ({wavelet}) — {start_sec:.2f}-{(start_sec + interval_sec):.2f} s")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Frequency  [Hz]")
+    ax.set_title(f"Wavelet Scalogram ({wavelet}) — {start/signal.sample_rate:.2f}-{(end/signal.sample_rate):.2f} s")
 
 
 @with_axes
@@ -389,7 +385,7 @@ def plot_baseline_wander(
     interval_sec: float = 10,
     ax: plt.Axes | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
-    segment, time, _, _ = _get_segment(
+    segment, time, start, end = _get_segment(
         signal,
         start_sec,
         interval_sec,
@@ -409,10 +405,10 @@ def plot_baseline_wander(
     )
 
     ax.set_title(
-        f"Baseline Wander — {start_sec:.2f}-{(start_sec + interval_sec):.2f} s"
+        f"Baseline Wander — {start/signal.sample_rate:.2f}-{(end/signal.sample_rate):.2f} s"
     )
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Amplitude (mV)")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Amplitude [mV]")
     ax.legend()
 
 
@@ -425,8 +421,8 @@ def plot_fft(
 
     ax.plot(freqs, magnitude)
 
-    ax.set_xlabel("Frequency (Hz)")
-    ax.set_ylabel("Amplitude")
+    ax.set_xlabel("Frequency [Hz]")
+    ax.set_ylabel("Amplitude [dB]")
     ax.set_title("FFT Magnitude Spectrum")
 
 
@@ -447,6 +443,6 @@ def plot_psd(
 
     ax.semilogy(freqs, psd)
 
-    ax.set_xlabel("Frequency (Hz)")
-    ax.set_ylabel("PSD (mV²/Hz)")
+    ax.set_xlabel("Frequency [Hz]")
+    ax.set_ylabel("PSD [mV²/Hz]")
     ax.set_title("Power Spectral Density")

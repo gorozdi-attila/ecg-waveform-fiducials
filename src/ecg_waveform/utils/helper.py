@@ -1,12 +1,9 @@
 import numpy as np
-
 import pywt
-
 from scipy.ndimage import median_filter
+from scipy.signal import spectrogram, welch
 
-from scipy.signal import welch, spectrogram
-
-from ecg_waveform.core import ECGSignal, ECGAnnotation
+from ecg_waveform.core import ECGAnnotation, ECGSignal
 
 
 def compute_window(

@@ -1,3 +1,6 @@
+from .loader import (
+    load_yaml,
+)
 from .paths import (
     CONFIGS_DIR,
     DATA_DIR,
@@ -8,10 +11,6 @@ from .paths import (
     ensure_directories,
     get_ludb_record_names,
     get_mitdb_record_names,
-)
-
-from .loader import (
-    load_yaml,
 )
 
 __all__ = [

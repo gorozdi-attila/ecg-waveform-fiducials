@@ -1,13 +1,9 @@
-from functools import cached_property
-
-from dataclasses import dataclass
-
 from collections.abc import Iterator
-
-import numpy as np
-
+from dataclasses import dataclass
+from functools import cached_property
 from math import gcd
 
+import numpy as np
 from scipy.signal import resample_poly
 
 
@@ -139,8 +135,8 @@ class ECGSignal:
         if self.sample_rate == target_sample_rate:
             return self
 
-        sr = int(round(self.sample_rate))
-        tsr = int(round(target_sample_rate))
+        sr = int(self.sample_rate)
+        tsr = int(target_sample_rate)
 
         g = gcd(sr, tsr)
 

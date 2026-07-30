@@ -1,16 +1,12 @@
 from abc import ABC, abstractmethod
-
 from functools import lru_cache
-
 from pathlib import Path
-
 from typing import Callable
 
 import numpy as np
-
 import wfdb
 
-from ecg_waveform.core import ECGRecord, ECGSignal, ECGAnnotation
+from ecg_waveform.core import ECGAnnotation, ECGRecord, ECGSignal
 
 
 class BaseDataLoader(ABC):

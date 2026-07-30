@@ -1,22 +1,20 @@
-from pathlib import Path
-from typing import Callable, Any
-
 from collections import Counter
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
+from ecg_waveform.core import ECGAnnotation, ECGRecord, ECGSignal
 from ecg_waveform.data import WFDBLoader
-from ecg_waveform.core import ECGRecord, ECGSignal, ECGAnnotation
-
 from ecg_waveform.quality import (
-    kurtosis_sqi,
-    qrs_power_sqi,
-    powerline_noise_ratio,
     baseline_wander_ratio,
     flatline_ratio,
+    kurtosis_sqi,
+    powerline_noise_ratio,
+    qrs_power_sqi,
 )
-
 
 DEFAULT_OUTLIER_LIMIT_MV = 5.0
 POWERLINE_FREQS_HZ = (50.0, 60.0)

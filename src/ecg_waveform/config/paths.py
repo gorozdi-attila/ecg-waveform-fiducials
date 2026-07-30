@@ -1,5 +1,4 @@
 from functools import cache
-
 from pathlib import Path
 
 import wfdb
@@ -27,8 +26,6 @@ RESULTS_DIR: Path = PROJECT_ROOT / "results"
 DIRECTORIES: tuple[Path] = (
     CONFIGS_DIR,
     DATA_DIR,
-    MITDB_DIR,
-    LUDB_DIR,
     RESULTS_DIR,
 )
 
