@@ -1,5 +1,6 @@
-from .loader import (
+from .config import (
     load_yaml,
+    save_yaml,
 )
 from .paths import (
     CONFIGS_DIR,
@@ -8,6 +9,7 @@ from .paths import (
     MITDB_DIR,
     PROJECT_ROOT,
     RESULTS_DIR,
+    FIGURES_DIR,
     ensure_directories,
     get_ludb_record_names,
     get_mitdb_record_names,
@@ -20,8 +22,10 @@ __all__ = [
     "MITDB_DIR",
     "PROJECT_ROOT",
     "RESULTS_DIR",
+    "FIGURES_DIR",
     "ensure_directories",
     "get_ludb_record_names",
     "get_mitdb_record_names",
     "load_yaml",
+    "save_yaml",
 ]

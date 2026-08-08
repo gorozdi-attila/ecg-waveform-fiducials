@@ -1,10 +1,19 @@
 from collections.abc import Iterator
 from dataclasses import dataclass
+from enum import Enum
 from functools import cached_property
 from math import gcd
 
 import numpy as np
 from scipy.signal import resample_poly
+
+
+class Fiducials(str, Enum):
+    P_WAVE = "P"
+    Q_WAVE = "Q"
+    R_WAVE = "R"
+    S_WAVE = "S"
+    T_WAVE = "T"
 
 
 @dataclass(frozen=True, eq=False, repr=False)
@@ -32,6 +41,9 @@ class ECGAnnotation:
         self.symbol.flags.writeable = False
         self.sample.flags.writeable = False
 
+    def __len__(self) -> int:
+        return len(self.sample)
+
     def __repr__(self) -> str:
         return f"Annotation(n_points={len(self.sample)}, unique_symbols={sorted(set(self.symbol.tolist()))})"
 
@@ -43,6 +55,27 @@ class ECGAnnotation:
         return ECGAnnotation(
             symbol=self.symbol[mask],
             sample=self.sample[mask],
+        )
+
+    def merge(self, other: "ECGAnnotation") -> "ECGAnnotation":
+        sample = np.concatenate([self.sample, other.sample])
+        symbol = np.concatenate([self.symbol, other.symbol])
+
+        order = np.argsort(sample, kind="stable")
+
+        return ECGAnnotation(
+            symbol=symbol[order],
+            sample=sample[order]
+        )
+
+    def segment(self, start: int, end: int) -> "ECGAnnotation":
+        if start < 0 or end < start:
+            raise ValueError("Invalid segment bounds")
+        
+        mask = (self.sample >= start) & (self.sample < end)
+        return ECGAnnotation(
+            symbol=self.symbol[mask],
+            sample=self.sample[mask] - start,
         )
 
 
@@ -111,14 +144,11 @@ class ECGSignal:
             raise ValueError("Invalid segment bounds")
 
         sample_segment = self.sample[start:end]
+        
         annotation_segment = None
 
         if self.annotation is not None:
-            mask = (self.annotation.sample >= start) & (self.annotation.sample < end)
-            annotation_segment = ECGAnnotation(
-                symbol=self.annotation.symbol[mask],
-                sample=self.annotation.sample[mask] - start,
-            )
+            annotation_segment = self.annotation.segment(start, end)
 
         return ECGSignal(
             sample=sample_segment,
@@ -176,11 +206,20 @@ class ECGSignal:
             annotation=self.annotation,
         )
 
+    def with_annotation(self, annotation: ECGAnnotation | None) -> "ECGSignal":
+        return ECGSignal(
+            sample=self.sample,
+            sample_rate=self.sample_rate,
+            channel=self.channel,
+            lead_name=self.lead_name,
+            annotation=annotation,
+        )
+
 
 @dataclass(frozen=True, eq=False)
 class ECGRecord:
     record_name: str | None
-    signals: tuple[ECGSignal]
+    signals: tuple[ECGSignal, ...]
 
     def __post_init__(self):
         if not self.signals:

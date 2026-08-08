@@ -44,7 +44,7 @@ def _get_segment(
 
     return segment, time, start, end
 
-
+    
 def with_axes(plot_fn: Callable):
     @wraps(plot_fn)
     def wrapper(*args, ax: plt.Axes | None = None, **kwargs):
@@ -64,13 +64,54 @@ def with_axes(plot_fn: Callable):
     return wrapper
 
 
+def _plot_annotations(
+    ax: plt.Axes,
+    samples: np.ndarray,
+    annotation: ECGAnnotation,
+    sample_rate: float,
+    window_start: float,
+    offset: float,
+    color: str,
+    label: str,
+    marker: str = "o",
+):
+    if annotation is None or len(annotation.sample) == 0:
+        return
+
+    x = annotation.sample / sample_rate + window_start
+    y = samples[annotation.sample]
+
+    ax.scatter(
+        x,
+        y,
+        s=30,
+        marker=marker,
+        color=color,
+        zorder=3,
+        label=label,
+    )
+
+    for xi, yi, sym in zip(x, y, annotation.symbol):
+        ax.text(
+            xi,
+            yi + offset,
+            sym,
+            color=color,
+            fontsize=8,
+            ha="center",
+            weight="bold",
+        )
+
+
 @with_axes
 def plot_signal(
     signal: ECGSignal,
     start_sec: float = 0,
-    interval_sec: float = 10,
+    interval_sec: float = 5,
     show_annotation: bool = True,
     ax: plt.Axes | None = None,
+    title: str | None = None,
+    **plot_kwargs,
 ) -> tuple[plt.Figure, plt.Axes]:
     segment, time, start, end = _get_segment(
         signal,
@@ -80,38 +121,29 @@ def plot_signal(
 
     window_start = start / signal.sample_rate
 
-    ax.plot(time, segment.sample, label="ECG Signal")
+    ax.plot(
+        time,
+        segment.sample,
+        label="ECG Signal",
+        **plot_kwargs,
+    )
 
-    if (
-        show_annotation
-        and segment.annotation is not None
-        and len(segment.annotation.sample) > 0
-    ):
-        ann_x = segment.annotation.sample / segment.sample_rate + window_start
-        ann_y = segment.sample[segment.annotation.sample]
-
-        ax.scatter(
-            ann_x,
-            ann_y,
-            s=30,
+    if show_annotation:
+        _plot_annotations(
+            ax,
+            segment.sample,
+            segment.annotation,
+            segment.sample_rate,
+            window_start,
+            0.05 * np.ptp(segment.sample),
             color="red",
-            zorder=3,
-            label="Annotated Points",
+            label="Annotated points",
         )
 
-        offset = 0.05 * (segment.sample.max() - segment.sample.min())
-
-        for x, y, sym in zip(ann_x, ann_y, segment.annotation.symbol):
-            ax.text(
-                x,
-                y + offset,
-                sym,
-                fontsize=8,
-                ha="center",
-                weight="bold",
-            )
-
-    ax.set_title(f"ECG Signal — {signal.lead_name} lead — {start/signal.sample_rate:.2f}-{(end/signal.sample_rate):.2f} s")
+    if title is None:
+        ax.set_title(f"ECG Signal — {start / signal.sample_rate:.2f}-{(end / signal.sample_rate):.2f} s")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Amplitude [mV]")
     ax.legend()
@@ -122,6 +154,8 @@ def plot_amplitude_distribution(
     signal: ECGSignal,
     physiological_limit_mv: float = 5.0,
     ax: plt.Axes | None = None,
+    title: str | None = None,
+    **plot_kwargs,
 ) -> tuple[plt.Figure, plt.Axes]:
     sns.histplot(
         signal.sample,
@@ -130,6 +164,7 @@ def plot_amplitude_distribution(
         linewidth=0,
         ax=ax,
         label="Amplitude distribution",
+        **plot_kwargs,
     )
 
     ax.axvline(
@@ -145,7 +180,10 @@ def plot_amplitude_distribution(
         label=f"Max threshold ({physiological_limit_mv} mV)",
     )
 
-    ax.set_title("Amplitude distribution")
+    if title is None:
+        ax.set_title("Amplitude distribution")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("Amplitude [mV]")
     ax.set_ylabel("Count")
     ax.legend()
@@ -157,6 +195,7 @@ def plot_beat_overlays(
     r_peaks: ECGAnnotation,
     window_ms: tuple[int, int] = (200, 400),
     ax: plt.Axes | None = None,
+    title: str | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
     left = round(window_ms[0] * signal.sample_rate / 1000)
     right = round(window_ms[1] * signal.sample_rate / 1000)
@@ -198,7 +237,10 @@ def plot_beat_overlays(
         label="R-peak",
     )
 
-    ax.set_title(f"ECG Beat Overlay ({len(beats_arr)} beats)")
+    if title is None:
+        ax.set_title(f"ECG Beat Overlay ({len(beats_arr)} beats)")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("Time [ms]")
     ax.set_ylabel("Amplitude [mV]")
     ax.legend()
@@ -209,6 +251,7 @@ def plot_rr_tachogram(
     signal: ECGSignal,
     r_peaks: ECGAnnotation,
     ax: plt.Axes | None = None,
+    title: str | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
     rr_intervals = compute_rr_intervals(signal, r_peaks)
     beat_idx = np.arange(1, len(r_peaks.sample))
@@ -221,7 +264,10 @@ def plot_rr_tachogram(
         label="RR interval",
     )
 
-    ax.set_title("RR Tachogram")
+    if title is None:
+        ax.set_title("RR Tachogram")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("Beat index")
     ax.set_ylabel("RR interval [ms]")
     ax.legend()
@@ -232,6 +278,7 @@ def plot_rr_distribution(
     signal: ECGSignal,
     r_peaks: ECGAnnotation,
     ax: plt.Axes | None = None,
+    title: str | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
     rr_intervals = compute_rr_intervals(signal, r_peaks)
 
@@ -244,7 +291,10 @@ def plot_rr_distribution(
         label="RR interval distribution",
     )
 
-    ax.set_title(f"HRV Distribution — Mean: {np.mean(rr_intervals):.2f} ms")
+    if title is None:
+        ax.set_title("RR Distribution")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("RR Interval [ms]")
     ax.set_ylabel("Count")
     ax.legend()
@@ -255,9 +305,9 @@ def plot_poincare(
     signal: ECGSignal,
     r_peaks: ECGAnnotation,
     ax: plt.Axes | None = None,
+    title: str | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
-    
-    
+
     rr_intervals = compute_rr_intervals(signal, r_peaks)
 
     ax.scatter(
@@ -274,7 +324,10 @@ def plot_poincare(
         "r--",
     )
 
-    ax.set_title("Poincaré Plot")
+    if title is None:
+        ax.set_title("Poincaré Plot")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("RRₙ [ms]")
     ax.set_ylabel("RRₙ₊₁ [ms]")
     ax.legend()
@@ -290,8 +343,9 @@ def plot_spectrogram(
     scaling: str = "density",
     mode: str = "magnitude",
     start_sec: float = 0,
-    interval_sec: float = 10,
+    interval_sec: float = 5,
     ax: plt.Axes | None = None,
+    title: str | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
     segment, _, start, end = _get_segment(
         signal,
@@ -329,7 +383,10 @@ def plot_spectrogram(
         label="Power [dB]",
     )
 
-    ax.set_title(f"Spectrogram — {start/signal.sample_rate:.2f}-{(end/signal.sample_rate):.2f} s")
+    if title is None:
+        ax.set_title(f"Spectrogram — {start / signal.sample_rate:.2f}-{(end / signal.sample_rate):.2f} s")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Frequency [Hz]")
 
@@ -339,8 +396,9 @@ def plot_wavelet_scalogram(
     signal: ECGSignal,
     wavelet: str = "morl",
     start_sec: float = 0,
-    interval_sec: float = 10,
+    interval_sec: float = 5,
     ax: plt.Axes | None = None,
+    title: str | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
     segment, time, start, end = _get_segment(
         signal,
@@ -371,9 +429,12 @@ def plot_wavelet_scalogram(
         label="Magnitude",
     )
 
+    if title is None:
+        ax.set_title(f"Wavelet Scalogram ({wavelet}) — {start / signal.sample_rate:.2f}-{(end / signal.sample_rate):.2f} s")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Frequency  [Hz]")
-    ax.set_title(f"Wavelet Scalogram ({wavelet}) — {start/signal.sample_rate:.2f}-{(end/signal.sample_rate):.2f} s")
 
 
 @with_axes
@@ -382,8 +443,10 @@ def plot_baseline_wander(
     window1_ms: int = 200,
     window2_ms: int = 600,
     start_sec: float = 0,
-    interval_sec: float = 10,
+    interval_sec: float = 5,
     ax: plt.Axes | None = None,
+    title: str | None = None,
+    **plot_kwargs,
 ) -> tuple[plt.Figure, plt.Axes]:
     segment, time, start, end = _get_segment(
         signal,
@@ -402,11 +465,13 @@ def plot_baseline_wander(
         baseline,
         color="red",
         label="Estimated Baseline",
+        **plot_kwargs,
     )
 
-    ax.set_title(
-        f"Baseline Wander — {start/signal.sample_rate:.2f}-{(end/signal.sample_rate):.2f} s"
-    )
+    if title is None:
+        ax.set_title(f"Baseline Wander — {start / signal.sample_rate:.2f}-{(end / signal.sample_rate):.2f} s")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Amplitude [mV]")
     ax.legend()
@@ -416,14 +481,23 @@ def plot_baseline_wander(
 def plot_fft(
     signal: ECGSignal,
     ax: plt.Axes | None = None,
+    title: str | None = None,
+    **plot_kwargs,
 ) -> tuple[plt.Figure, plt.Axes]:
     freqs, magnitude = compute_fft(signal)
 
-    ax.plot(freqs, magnitude)
+    ax.plot(
+        freqs,
+        magnitude,
+        **plot_kwargs
+    )
 
+    if title is None:
+        ax.set_title("FFT Magnitude Spectrum")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("Frequency [Hz]")
     ax.set_ylabel("Amplitude [dB]")
-    ax.set_title("FFT Magnitude Spectrum")
 
 
 @with_axes
@@ -433,6 +507,8 @@ def plot_psd(
     window: str = "hann",
     noverlap: int | None = None,
     ax: plt.Axes | None = None,
+    title: str | None = None,
+    **plot_kwargs,
 ) -> tuple[plt.Figure, plt.Axes]:
     freqs, psd = compute_psd(
         signal,
@@ -441,8 +517,69 @@ def plot_psd(
         noverlap=noverlap,
     )
 
-    ax.semilogy(freqs, psd)
+    ax.semilogy(
+        freqs, 
+        psd,
+        **plot_kwargs
+    )
 
+    if title is None:
+        ax.set_title("Power Spectral Density")
+    else: 
+        ax.set_title(title)
     ax.set_xlabel("Frequency [Hz]")
     ax.set_ylabel("PSD [mV²/Hz]")
-    ax.set_title("Power Spectral Density")
+
+
+@with_axes
+def plot_detection_results(
+    signal: ECGSignal,
+    predicted: ECGAnnotation,
+    start_sec: float = 0,
+    interval_sec: float = 5,
+    ax: plt.Axes | None = None,
+    title: str | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    segment, time, start, end = _get_segment(
+        signal,
+        start_sec,
+        interval_sec,
+    )
+
+    window_start = start / signal.sample_rate
+
+    ax.plot(time, segment.sample, label="ECG Signal")
+
+    _plot_annotations(
+        ax,
+        segment.sample,
+        segment.annotation,
+        segment.sample_rate,
+        window_start,
+        0.05 * np.ptp(segment.sample),
+        marker="v",
+        color="red",
+        label="Ground truth",
+    )
+
+    predicted_segment = predicted.segment(start, end)
+
+    _plot_annotations(
+        ax,
+        segment.sample,
+        predicted_segment,
+        segment.sample_rate,
+        window_start,
+        -0.1 * np.ptp(segment.sample),
+        marker="^",
+        color="green",
+        label="Prediction",
+    )
+
+    if title is None:
+        ax.set_title(f"ECG Signal Detection Result — {start / signal.sample_rate:.2f}-{(end / signal.sample_rate):.2f} s")
+    else: 
+        ax.set_title(title)
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Amplitude [mV]")
+    ax.legend()

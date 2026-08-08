@@ -21,6 +21,7 @@ MITDB_DIR: Path = DATA_DIR / "mitdb"
 LUDB_DIR: Path = DATA_DIR / "ludb"
 
 RESULTS_DIR: Path = PROJECT_ROOT / "results"
+FIGURES_DIR: Path = RESULTS_DIR / "figures"
 
 
 DIRECTORIES: tuple[Path] = (

@@ -1,0 +1,14 @@
+steps:
+- name: median_baseline_filter
+- name: notch_filter
+  params:
+    freq: 50.0
+- name: notch_filter
+  params:
+    freq: 60.0
+- name: butterworth_filter
+  params:
+    low_cutoff: 0.5
+    high_cutoff: 40.0
+    order: 4
+- name: savgol_smooth

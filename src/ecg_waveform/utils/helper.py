@@ -8,18 +8,27 @@ from ecg_waveform.core import ECGAnnotation, ECGSignal
 
 def compute_window(
     n_sample: int,
-    sample_rate: float,
+    sample_rate: int,
     start_sec: float,
     interval_sec: float,
 ) -> tuple[int, int]:
-    start = max(0, min(int(start_sec * sample_rate), n_sample))
-    end = max(start, min(int((start_sec + interval_sec) * sample_rate), n_sample))
+    if n_sample <= 0:
+        raise ValueError("n_sample must be positive.")
+    if sample_rate <= 0:
+        raise ValueError("sample_rate must be positive.")
+    if start_sec < 0:
+        raise ValueError("start_sec must be non-negative.")
+    if interval_sec <= 0:
+        raise ValueError("interval_sec must be positive.")
 
-    if start == end:
-        raise ValueError(
-            "Requested window is outside the signal bounds or has zero length "
-            f"(start={start}, end={end})."
-        )
+    start = round(start_sec * sample_rate)
+    end = round((start_sec + interval_sec) * sample_rate)
+
+    start = min(start, n_sample)
+    end = min(end, n_sample)
+
+    if start >= end:
+        raise ValueError("Requested window is outside the signal bounds or has zero length.")
 
     return start, end
 
@@ -65,6 +74,15 @@ def compute_psd(
     if nperseg is None:
         nperseg = min(len(signal.sample), 4096, max(256, len(signal.sample) // 4))
 
+    if nperseg <= 0:
+        raise ValueError("nperseg must be positive.")
+
+    if noverlap is not None:
+        if noverlap < 0:
+            raise ValueError("noverlap must be non-negative.")
+        if noverlap >= nperseg:
+            raise ValueError("noverlap must be smaller than nperseg.")
+
     freqs, psd = welch(
         signal.sample,
         fs=signal.sample_rate,
@@ -104,6 +122,12 @@ def compute_spectrogram(
     scaling: str = "density",
     mode: str = "magnitude",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    if nperseg <= 0:
+        raise ValueError("nperseg must be positive.")
+
+    if noverlap < 0:
+        raise ValueError("noverlap must be non-negative.")
+
     if noverlap >= nperseg:
         raise ValueError("noverlap must be smaller than nperseg.")
 

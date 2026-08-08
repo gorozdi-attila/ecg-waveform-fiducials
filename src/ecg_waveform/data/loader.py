@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from functools import lru_cache
 from pathlib import Path
 from typing import Callable
 
@@ -13,7 +12,6 @@ class BaseDataLoader(ABC):
     def __init__(self, dataset_root: Path) -> None:
         self.dataset_root = Path(dataset_root)
 
-    @lru_cache(maxsize=None)
     @abstractmethod
     def __getitem__(self, record_name: str) -> ECGRecord: ...
 
@@ -71,7 +69,6 @@ class WFDBLoader(BaseDataLoader):
 
         return ECGAnnotation(symbol=symbol, sample=sample)
 
-    @lru_cache(maxsize=None)
     def __getitem__(self, record_name: str) -> ECGRecord:
         record_path = self.dataset_root / record_name
         record = wfdb.rdrecord(str(record_path))

@@ -24,8 +24,8 @@ This project is under active development as part of a BSc thesis. Current progre
  
 - [x] Literature review
 - [x] ECG preprocessing pipeline
-- [ ] R-peak detection — Pan-Tompkins algorithm
-- [ ] Full PQRST delineation — heuristic rules around R-peak
+- [x] R-peak detection — Pan-Tompkins algorithm
+- [x] Full PQRST delineation — heuristic rules around R-peak
 - [ ] Wavelet transform-based PQRST detection
 - [ ] Machine learning-based PQRST detection
 - [ ] Evaluation on MIT-BIH Arrhythmia Database
