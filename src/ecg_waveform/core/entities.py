@@ -63,15 +63,12 @@ class ECGAnnotation:
 
         order = np.argsort(sample, kind="stable")
 
-        return ECGAnnotation(
-            symbol=symbol[order],
-            sample=sample[order]
-        )
+        return ECGAnnotation(symbol=symbol[order], sample=sample[order])
 
     def segment(self, start: int, end: int) -> "ECGAnnotation":
         if start < 0 or end < start:
             raise ValueError("Invalid segment bounds")
-        
+
         mask = (self.sample >= start) & (self.sample < end)
         return ECGAnnotation(
             symbol=self.symbol[mask],
@@ -144,7 +141,7 @@ class ECGSignal:
             raise ValueError("Invalid segment bounds")
 
         sample_segment = self.sample[start:end]
-        
+
         annotation_segment = None
 
         if self.annotation is not None:

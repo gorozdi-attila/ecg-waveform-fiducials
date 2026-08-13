@@ -3,7 +3,7 @@ from enum import Flag, auto
 
 import numpy as np
 
-from ecg_waveform.core import ECGSignal, ECGAnnotation, Fiducials
+from ecg_waveform.core import ECGAnnotation, ECGSignal, Fiducials
 
 FIDUCIAL_OFFSETS = {
     Fiducials.P_WAVE: -0.20,
@@ -50,7 +50,7 @@ def _add_gaussian_wave(
     width_sec: float,
 ) -> None:
     half_window = max(1, int(np.ceil(4 * width_sec * sample_rate)))
-    center_idx = int(round(center_sec * sample_rate))
+    center_idx = round(center_sec * sample_rate)
 
     start = max(0, center_idx - half_window)
     end = min(len(signal), center_idx + half_window)
@@ -125,7 +125,7 @@ def simulate_ecg(
     sample_rate: int = 200,
     heart_rate_bpm: float = 70.0,
     hrv_std_sec: float = 0.03,
-    noise: NoiseConfig | None = NoiseConfig(),
+    noise: NoiseConfig | None = NoiseConfig.ALL,
     seed: int | None = 42,
 ) -> ECGSignal:
     rng = np.random.default_rng(seed)

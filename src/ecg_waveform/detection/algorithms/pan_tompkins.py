@@ -3,24 +3,25 @@ from dataclasses import dataclass, field
 import numpy as np
 from scipy.signal import find_peaks
 
+from ecg_waveform.core import ECGAnnotation, ECGSignal, Fiducials
+from ecg_waveform.signal.preprocessing import butterworth_filter
+
 from ..base import BaseDetector
 from ..delineator.base import BaseDelineator
 from ..delineator.windowed import WindowedFiducialDelineator
 from ..registry import register_detector
 
-from ecg_waveform.core import ECGSignal, ECGAnnotation, Fiducials
-from ecg_waveform.signal.preprocessing import butterworth_filter
-
 
 @dataclass
-class PreprocessedSignal:
+class PtPreprocessedSignal:
     bandpassed: ECGSignal
     derivative: ECGSignal
     squared: ECGSignal
     integrated: ECGSignal
 
 
-@dataclass(repr=False)
+@register_detector("pan_tompkins")
+@dataclass(repr=False, slots=True)
 class PanTompkinsDetector(BaseDetector):
     high_cutoff: float = 15.0
     low_cutoff: float = 5.0
@@ -28,7 +29,9 @@ class PanTompkinsDetector(BaseDetector):
     window_size_s: float = 0.15
     refractory_period_s: float = 0.2
 
-    delineator: BaseDelineator | None = field(default_factory=WindowedFiducialDelineator)
+    delineator: BaseDelineator | None = field(
+        default_factory=WindowedFiducialDelineator
+    )
 
     @property
     def supported_points(self) -> frozenset[Fiducials]:
@@ -56,13 +59,13 @@ class PanTompkinsDetector(BaseDetector):
         window = np.ones(moving_window) / moving_window
         return signal.with_sample(np.convolve(signal.sample, window, mode="same"))
 
-    def preprocess(self, signal: ECGSignal) -> PreprocessedSignal:
+    def preprocess(self, signal: ECGSignal) -> PtPreprocessedSignal:
         bandpassed = self.bandpass(signal)
         derivative = self.derivative(bandpassed)
         squared = self.square(derivative)
         integrated = self.moving_average(squared)
 
-        return PreprocessedSignal(
+        return PtPreprocessedSignal(
             bandpassed=bandpassed,
             derivative=derivative,
             squared=squared,
@@ -151,10 +154,11 @@ class PanTompkinsDetector(BaseDetector):
 
             rr_avg = rr_expected()
 
-            if not is_qrs and last_qrs is not None and rr_avg is not None:
-                if peak - last_qrs > 1.6 * rr_avg and searchback_candidates:
-                    peak, value = max(searchback_candidates, key=lambda x: x[1])
-                    is_qrs = True
+            if (not is_qrs and last_qrs is not None and rr_avg is not None) and (
+                peak - last_qrs > 1.6 * rr_avg and searchback_candidates
+            ):
+                peak, value = max(searchback_candidates, key=lambda x: x[1])
+                is_qrs = True
 
             if is_qrs:
                 refined_peak = self._refine_r_peaks(bandpassed, sample_rate, peak)
@@ -213,6 +217,3 @@ class PanTompkinsDetector(BaseDetector):
 
         fiducials = self.delineator.delineate(signal, r_samples, qrs_band=bandpassed)
         return r_annotation.merge(fiducials)
-
-
-register_detector("pan_tompkins", PanTompkinsDetector)

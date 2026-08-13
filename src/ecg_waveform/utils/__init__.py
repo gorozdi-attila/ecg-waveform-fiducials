@@ -9,11 +9,11 @@ from .helper import (
 )
 
 __all__ = [
-    "compute_window",
-    "compute_rr_intervals",
     "compute_baseline",
-    "compute_psd",
     "compute_fft",
+    "compute_psd",
+    "compute_rr_intervals",
     "compute_spectrogram",
     "compute_wavelet",
+    "compute_window",
 ]

@@ -1,20 +1,13 @@
-from abc import ABC, abstractmethod
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import numpy as np
 import wfdb
 
 from ecg_waveform.core import ECGAnnotation, ECGRecord, ECGSignal
 
-
-class BaseDataLoader(ABC):
-    def __init__(self, dataset_root: Path) -> None:
-        self.dataset_root = Path(dataset_root)
-
-    @abstractmethod
-    def __getitem__(self, record_name: str) -> ECGRecord: ...
-
+from .base import BaseDataLoader
+from .mapper import FiducialMapper
 
 AnnotationExtension = (
     str | dict[int | str, str] | Callable[[int, str | None], str | None] | None
@@ -23,10 +16,14 @@ AnnotationExtension = (
 
 class WFDBLoader(BaseDataLoader):
     def __init__(
-        self, dataset_root: Path, annotation_extension: AnnotationExtension = None
+        self,
+        dataset_root: Path,
+        annotation_extension: AnnotationExtension = None,
+        symbol_mapper: FiducialMapper | None = None,
     ):
         super().__init__(dataset_root)
         self.annotation_extension = annotation_extension
+        self.symbol_mapper = symbol_mapper
 
     def _resolve_extension(self, channel: int, lead_name: str | None) -> str | None:
         match self.annotation_extension:
@@ -67,7 +64,12 @@ class WFDBLoader(BaseDataLoader):
                 symbol = symbol[mask]
                 sample = sample[mask]
 
-        return ECGAnnotation(symbol=symbol, sample=sample)
+        annotation = ECGAnnotation(symbol=symbol, sample=sample)
+
+        if self.symbol_mapper is not None:
+            annotation = self.symbol_mapper.translate(annotation)
+
+        return annotation
 
     def __getitem__(self, record_name: str) -> ECGRecord:
         record_path = self.dataset_root / record_name
@@ -93,5 +95,5 @@ class WFDBLoader(BaseDataLoader):
 
         return ECGRecord(
             record_name=record_name,
-            signals=signals,
+            signals=tuple(signals),
         )

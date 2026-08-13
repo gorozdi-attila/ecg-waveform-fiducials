@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ecg_waveform.core import ECGSignal, ECGAnnotation, Fiducials
+from ecg_waveform.core import ECGAnnotation, ECGSignal, Fiducials
 
 
 @dataclass(frozen=True, eq=False)
@@ -116,7 +116,7 @@ def compute_metrics(
     reference = reference.filter(symbol)
     predicted = predicted.filter(symbol)
 
-    tolerance_samples = int(round(tolerance_ms / 1000 * signal.sample_rate))
+    tolerance_samples = round(tolerance_ms / 1000 * signal.sample_rate)
 
     match = match_points(
         reference.sample,

@@ -21,19 +21,19 @@ from .registry import (
 )
 
 __all__ = [
-    "kurtosis_sqi",
-    "band_power_ratio",
-    "qrs_power_sqi",
-    "powerline_noise_ratio",
-    "baseline_wander_ratio",
-    "flatline_ratio",
-    "beat_agreement_sqi",
-    "rr_plausibility_ratio",
+    "QUALITY_METRIC_REGISTRY",
     "Direction",
     "QualityLevel",
     "QualityMetricSpec",
     "QualityReport",
     "SignalQualityAssessor",
-    "QUALITY_METRIC_REGISTRY",
+    "band_power_ratio",
+    "baseline_wander_ratio",
+    "beat_agreement_sqi",
+    "flatline_ratio",
+    "kurtosis_sqi",
+    "powerline_noise_ratio",
+    "qrs_power_sqi",
     "register_quality_metric",
+    "rr_plausibility_ratio",
 ]

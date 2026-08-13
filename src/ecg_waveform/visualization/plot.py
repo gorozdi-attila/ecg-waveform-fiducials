@@ -497,7 +497,7 @@ def plot_fft(
     else: 
         ax.set_title(title)
     ax.set_xlabel("Frequency [Hz]")
-    ax.set_ylabel("Amplitude [dB]")
+    ax.set_ylabel("Magnitude [dB]")
 
 
 @with_axes

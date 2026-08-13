@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import kurtosis
 
-from ecg_waveform.core import ECGSignal, ECGAnnotation
+from ecg_waveform.core import ECGAnnotation, ECGSignal
 from ecg_waveform.utils import compute_baseline, compute_psd
 
 
@@ -116,7 +116,7 @@ def flatline_ratio(
     if x.size < 2:
         return 0.0
 
-    min_run_samples = max(1, int(round(min_run_ms / 1000.0 * signal.sample_rate)))
+    min_run_samples = max(1, round(min_run_ms / 1000.0 * signal.sample_rate))
 
     dt = 1.0 / signal.sample_rate
     slope = np.abs(np.diff(x, prepend=x[0])) / dt
@@ -140,8 +140,8 @@ def beat_agreement_sqi(
     peaks_b: ECGAnnotation,
     tolerance_ms: float = 50.0,
 ) -> float:
-    peaks_a = np.asarray(peaks_a, dtype=np.int64)
-    peaks_b = np.asarray(peaks_b, dtype=np.int64)
+    peaks_a = np.asarray(peaks_a.sample, dtype=np.int64)
+    peaks_b = np.asarray(peaks_b.sample, dtype=np.int64)
 
     if peaks_a.size == 0 and peaks_b.size == 0:
         return float("nan")
@@ -171,7 +171,7 @@ def rr_plausibility_ratio(
     min_bpm: float = 30.0,
     max_bpm: float = 220.0,
 ) -> float:
-    peaks = np.asarray(peaks, dtype=np.int64)
+    peaks = np.asarray(peaks.sample, dtype=np.int64)
 
     if peaks.size < 2:
         return float("nan")

@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass, fields, is_dataclass
-from typing import Any
 from time import perf_counter
+from typing import Any
 
-from ecg_waveform.core import ECGSignal, ECGAnnotation, Fiducials
+from ecg_waveform.core import ECGAnnotation, ECGSignal, Fiducials
 
 
 @dataclass(frozen=True)
