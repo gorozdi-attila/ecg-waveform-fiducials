@@ -12,7 +12,7 @@ Accurate localization of the P wave, QRS complex, and T wave is essential for ca
 
 The primary objective of this project is to develop and evaluate methods for the automatic detection of PQRST fiducial points in ECG recordings. Three different approaches will be investigated and compared:
 
-- Pan-Tompkins algorithm
+- Pan-Tompkins++ algorithm
 - Wavelet transform-based detection
 - Machine learning-based detection
 
@@ -24,12 +24,12 @@ This project is under active development as part of a BSc thesis. Current progre
  
 - [x] Literature review
 - [x] ECG preprocessing pipeline
-- [x] R-peak detection — Pan-Tompkins algorithm
+- [x] R-peak detection with the Pan-Tompkins++ algorithm
 - [x] Full PQRST delineation — heuristic rules around R-peak
-- [ ] Wavelet transform-based PQRST detection
+- [x] Wavelet transform-based PQRST detection
 - [ ] Machine learning-based PQRST detection
 - [ ] Evaluation on MIT-BIH Arrhythmia Database
-- [ ] Evaluation on LUDB
+- [ ] Evaluation on Lobachevsky University Electrocardiography Database
 - [ ] Comparison with literature results
 - [ ] Performance benchmarking
 - [ ] Final thesis documentation
@@ -39,7 +39,7 @@ This project is under active development as part of a BSc thesis. Current progre
 ## Features
 
 - ECG signal preprocessing and denoising
-- R-peak detection using the Pan-Tompkins algorithm + PQRST delineation using heuristic rules
+- R-peak detection using the Pan-Tompkins++ algorithm + PQRST delineation using heuristic rules
 - Wavelet transform-based PQRST detection
 - Machine learning-based PQRST detection
 - Quantitative evaluation on benchmark datasets
@@ -146,13 +146,15 @@ All methods are evaluated under identical preprocessing and sampling conditions.
 
 1. Pan, J., & Tompkins, W. J. (1985). *A Real-Time QRS Detection Algorithm*. **IEEE Transactions on Biomedical Engineering**, 32(3), 230–236.
 
-2. Martínez, J. P., Almeida, R., Olmos, S., Rocha, A. P., & Laguna, P. (2004). *A Wavelet-Based ECG Delineator: Evaluation on Standard Databases*. **IEEE Transactions on Biomedical Engineering**, 51(4), 570–581.
+2. Imtiaz, M. N., & Khan, N. (2024). Pan-Tompkins++: A robust approach to detect R-peaks in ECG signals. **arXiv preprint arXiv:2211.03171v3**.
 
-3. Kiranyaz, S., Ince, T., & Gabbouj, M. (2016). *Real-Time Patient-Specific ECG Classification by 1-D Convolutional Neural Networks*. **IEEE Transactions on Biomedical Engineering**, 63(3), 664–675.
+3. Martínez, J. P., Almeida, R., Olmos, S., Rocha, A. P., & Laguna, P. (2004). *A Wavelet-Based ECG Delineator: Evaluation on Standard Databases*. **IEEE Transactions on Biomedical Engineering**, 51(4), 570–581.
 
-4. Moody, G. B., & Mark, R. G. (2001). *The MIT-BIH Arrhythmia Database*. **IEEE Engineering in Medicine and Biology Magazine**, 20(3), 45–50.
+4. Kiranyaz, S., Ince, T., & Gabbouj, M. (2016). *Real-Time Patient-Specific ECG Classification by 1-D Convolutional Neural Networks*. **IEEE Transactions on Biomedical Engineering**, 63(3), 664–675.
 
-5. Kalyakulina, A., et al. (2020). *LUDB: A New Open-Access Validation Tool for Electrocardiogram Delineation Algorithms*. **IEEE Access**, 8, 186181–186190.
+5. Moody, G. B., & Mark, R. G. (2001). *The MIT-BIH Arrhythmia Database*. **IEEE Engineering in Medicine and Biology Magazine**, 20(3), 45–50.
+
+6. Kalyakulina, A., et al. (2020). *LUDB: A New Open-Access Validation Tool for Electrocardiogram Delineation Algorithms*. **IEEE Access**, 8, 186181–186190.
 
 ## License
 

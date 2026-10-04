@@ -5,48 +5,44 @@ from pathlib import Path
 
 import wfdb
 
-from ecg_waveform.config import LUDB_DIR, MITDB_DIR
+from ecg_waveform.config import DATA_DIR
 
 _MARKER_NAME = ".download_complete"
 
-DATABASES: dict[str, Path] = {
-    "mitdb": MITDB_DIR,
-    "ludb": LUDB_DIR,
-}
 
+def download_database(
+    database_name: str, output_dir: Path, force: bool = False
+) -> bool:
+    output_dir = output_dir / database_name
 
-def _is_complete(output_dir: Path) -> bool:
-    return (output_dir / _MARKER_NAME).exists()
-
-
-def download_database(name: str, output_dir: Path, force: bool = False) -> bool:
     if force and output_dir.exists():
-        print(f"Removing existing {name} directory at {output_dir}...")
+        print(f"Removing existing {database_name} directory at {output_dir}...")
         shutil.rmtree(output_dir)
 
-    if _is_complete(output_dir):
-        print(f"{name} already downloaded.")
+    if (output_dir / _MARKER_NAME).exists():
+        print(f"{database_name} already downloaded.")
         return True
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        print(f"Downloading {name}...")
-        wfdb.dl_database(name, dl_dir=str(output_dir))
+        print(f"Downloading {database_name}...")
+        wfdb.dl_database(database_name, dl_dir=str(output_dir))
         (output_dir / _MARKER_NAME).touch()
         print(f"Done: {output_dir.resolve()}")
         return True
-    except Exception as exc:
+
+    except Exception as e:
         shutil.rmtree(output_dir, ignore_errors=True)
-        print(f"Failed to download {name}: {exc}", file=sys.stderr)
+        print(f"Failed to download {database_name}: {e}", file=sys.stderr)
         return False
 
 
 def main() -> int:
     parser = ArgumentParser(description="Download ECG databases from PhysioNet.")
     parser.add_argument(
-        "database",
-        choices=DATABASES.keys(),
+        "database_name",
+        type=str,
         help="Database to download.",
     )
     parser.add_argument(
@@ -58,8 +54,8 @@ def main() -> int:
     args = parser.parse_args()
 
     success = download_database(
-        args.database,
-        DATABASES[args.database],
+        args.database_name,
+        DATA_DIR,
         force=args.force,
     )
 

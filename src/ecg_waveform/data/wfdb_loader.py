@@ -4,9 +4,10 @@ from pathlib import Path
 import numpy as np
 import wfdb
 
+from ecg_waveform.config import DATA_DIR
 from ecg_waveform.core import ECGAnnotation, ECGRecord, ECGSignal
 
-from .base import BaseDataLoader
+from .base_loader import BaseDataLoader
 from .mapper import FiducialMapper
 
 AnnotationExtension = (
@@ -17,13 +18,17 @@ AnnotationExtension = (
 class WFDBLoader(BaseDataLoader):
     def __init__(
         self,
-        dataset_root: Path,
+        dataset_name: str,
+        dataset_root: Path = DATA_DIR,
         annotation_extension: AnnotationExtension = None,
         symbol_mapper: FiducialMapper | None = None,
     ):
-        super().__init__(dataset_root)
+        super().__init__(dataset_name, dataset_root)
         self.annotation_extension = annotation_extension
         self.symbol_mapper = symbol_mapper
+
+    def list_records(self) -> list[str]:
+        return wfdb.get_record_list(self.dataset_name)
 
     def _resolve_extension(self, channel: int, lead_name: str | None) -> str | None:
         match self.annotation_extension:

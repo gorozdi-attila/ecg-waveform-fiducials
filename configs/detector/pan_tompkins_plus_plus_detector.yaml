@@ -1,0 +1,45 @@
+low_cutoff: 5.0
+high_cutoff: 18.0
+order: 4
+smoothing_window_s: 0.06
+integration_window_s: 0.15
+refractory_period_s: 0.231
+close_beat_period_s: 0.36
+slope_window_s: 0.07
+slope_ratio_threshold: 0.6
+searchback_gap_period_s: 1.0
+searchback_gap_ratio: 1.66
+weak_searchback_gap_period_s: 1.4
+weak_searchback_threshold_ratio: 0.2
+min_beats_for_rr_check: 8
+rr_history_size: 8
+threshold2_ratio: 0.4
+init_window_s: 2.0
+delineator:
+  qrs_low_cutoff: 5.0
+  qrs_high_cutoff: 18.0
+  qrs_order: 4
+  qrs_search_window_s: 0.12
+  qrs_slope_threshold_ratio: 0.08
+  qrs_slope_smoothing_s: 0.008
+  p_low_cutoff: 0.5
+  p_high_cutoff: 10.0
+  p_order: 2
+  p_search_before_s: 0.3
+  p_search_gap_s: 0.02
+  p_min_gap_from_prev_beat_s: 0.15
+  p_amplitude_threshold_ratio: 0.08
+  p_noise_multiplier: 2.0
+  p_boundary_persistence_s: 0.006
+  t_low_cutoff: 0.5
+  t_high_cutoff: 8.0
+  t_order: 2
+  t_search_after_s: 0.5
+  t_search_gap_s: 0.02
+  t_min_rr_fraction: 0.5
+  t_qrs_guard_s: 0.04
+  t_amplitude_threshold_ratio: 0.08
+  t_noise_multiplier: 2.0
+  t_boundary_persistence_s: 0.008
+  minimum_wave_samples: 5
+  boundary_smoothing_s: 0.008

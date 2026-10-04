@@ -1,0 +1,15 @@
+# 1. Bevezetés
+
+Az elektrokardiogram (EKG) egy széles körben alkalmazott, nem invazív diagnosztikai eljárás, amely a szív elektromos aktivitásának vizsgálatára és értékelésére szolgál. A módszer alapja, hogy a szívizom összehúzódása során keletkező elektromos potenciálváltozásokat a testfelszínre helyezett elektródák segítségével detektáljuk és rögzítjük.
+
+Nyugalmi állapotban a szívizomsejtek töltése negatív. A szívciklus során ingerület hatására depolarizáció következik be, amelynek során a sejtek töltése átmenetileg pozitívvá válik. Ez a folyamat térben és időben rendezett módon hullámszerűen terjed végig a szívizmon, és az izomrostok összehúzódását eredményezi. Ezt követi a repolarizáció, amely során a sejtek visszanyerik eredeti nyugalmi állapotukat.
+
+A depolarizáció és repolarizáció során létrejövő elektromos aktivitás az EKG görbén jellegzetes hullámformák formájában jelenik meg. Ezek közül a legfontosabbak a P-hullám, a QRS-komplexus és a T-hullám, amelynek a szívciklus egyes fázisaihoz köthetők, és diagnosztikai szempontból kiemelt jelentőséggel bírnak.
+
+Az EKG-jelek feldolgozása azonban számos kihívást rejt magában. A mért jelek gyakran tartalmaznak különböző zajkomponenseket, például izomtevékenységből származó interferenciát, hálózati zavarokat vagy egyéb zavarokat. Emellett az egyéni anatómiai és élettani különbségek, valamint a mérési körülmények változékonysága is befolyásolhatja a jelalakot.
+
+A PQRST pontok automatikus detektálása régóta kutatott terület, amelyre számos megközelítés született. A klasszikus jelfeldolgozási módszerek közé tartoznak például a szűrési technikák, a deriváltalapú eljárások, valamint a hullámtranszformációs módszerek, amelyek a jel idő- és frekvenciatartománybeli jellemzőit használják ki. Az egyik legismertebb algoritmus a Pan–Tompkins algoritmus, amely a QRS-komplexus detektálására szolgál különböző előfeldolgozási és döntési lépések kombinációjával.
+
+Az utóbbi években egyre nagyobb szerepet kaptak a mesterséges intelligencián alapuló megközelítések, különösen a gépi tanulási és mélytanulási modellek. Ezek a módszerek képesek nagyméretű adathalmazokból automatikusan megtanulni a releváns mintázatokat, és gyakran jobb teljesítményt nyújtanak zajos vagy változékony jelalakok esetén is.
+
+Jelen szakdolgozat célja olyan módszerek kidolgozása és megvalósítása, amelyek képesek az EKG jelekben a PQRST pontok automatikus detektálására. A dolgozat során három módszer implementációját és összehasonlítását fogom elvégezni: a Pan–Tompkins algoritmuson alapuló klasszikus jelfeldolgozási módszert, a wavelet-transzformációt alkalmazó megközelítést, valamint egy gépi tanuláson alapuló módszert. Az egyes módszerek teljesítményét nyilvánosan elérhető, szakértői annotációkkal rendelkező EKG-adatbázisokon fogom vizsgálni és összehasonlítani.

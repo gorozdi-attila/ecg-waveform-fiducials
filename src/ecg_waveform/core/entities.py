@@ -2,18 +2,24 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
-from math import gcd
 
 import numpy as np
-from scipy.signal import resample_poly
 
 
 class Fiducials(str, Enum):
-    P_WAVE = "P"
-    Q_WAVE = "Q"
-    R_WAVE = "R"
-    S_WAVE = "S"
-    T_WAVE = "T"
+    P_ONSET = "("
+    P_PEAK = "P"
+    P_OFFSET = ")"
+
+    QRS_ONSET = "{"
+    Q_PEAK = "Q"
+    R_PEAK = "R"
+    S_PEAK = "S"
+    QRS_OFFSET = "}"
+
+    T_ONSET = "["
+    T_PEAK = "T"
+    T_OFFSET = "]"
 
 
 @dataclass(frozen=True, eq=False, repr=False)
@@ -46,6 +52,27 @@ class ECGAnnotation:
 
     def __repr__(self) -> str:
         return f"Annotation(n_points={len(self.sample)}, unique_symbols={sorted(set(self.symbol.tolist()))})"
+
+    @classmethod
+    def from_points(cls, points: dict[Fiducials, np.ndarray]) -> "ECGAnnotation":
+        non_empty = {fiducial: arr for fiducial, arr in points.items() if len(arr) > 0}
+
+        if not non_empty:
+            return cls(
+                symbol=np.array([], dtype=str),
+                sample=np.array([], dtype=np.int64),
+            )
+
+        samples = np.concatenate(
+            [np.asarray(arr, dtype=np.int64) for arr in non_empty.values()]
+        )
+        symbols = np.array(
+            [fiducial.value for fiducial, arr in non_empty.items() for _ in arr],
+            dtype=str,
+        )
+
+        order = np.argsort(samples, kind="stable")
+        return cls(symbol=symbols[order], sample=samples[order])
 
     def filter(self, symbols: str | list[str]) -> "ECGAnnotation":
         symbols = [symbols] if isinstance(symbols, str) else symbols
@@ -153,45 +180,6 @@ class ECGSignal:
             channel=self.channel,
             lead_name=self.lead_name,
             annotation=annotation_segment,
-        )
-
-    def resample(self, target_sample_rate: int) -> "ECGSignal":
-        if target_sample_rate <= 0:
-            raise ValueError("target_sample_rate must be positive")
-
-        if self.sample_rate == target_sample_rate:
-            return self
-
-        sr = int(self.sample_rate)
-        tsr = int(target_sample_rate)
-
-        g = gcd(sr, tsr)
-
-        samples = resample_poly(
-            self.sample,
-            up=tsr // g,
-            down=sr // g,
-        )
-
-        annotation = None
-        if self.annotation is not None:
-            new_indices = np.rint(
-                self.annotation.sample * target_sample_rate / self.sample_rate
-            ).astype(int)
-
-            new_indices = np.clip(new_indices, 0, len(samples) - 1)
-
-            annotation = ECGAnnotation(
-                symbol=self.annotation.symbol,
-                sample=new_indices,
-            )
-
-        return ECGSignal(
-            sample=samples,
-            sample_rate=target_sample_rate,
-            channel=self.channel,
-            lead_name=self.lead_name,
-            annotation=annotation,
         )
 
     def with_sample(self, sample: np.ndarray) -> "ECGSignal":

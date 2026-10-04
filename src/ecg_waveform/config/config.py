@@ -25,7 +25,8 @@ def load_yaml(filename: str) -> dict[str, Any]:
 
 
 def save_yaml(filename: str, data: dict[str, Any]) -> None:
-    path: Path = CONFIGS_DIR / filename
+    path = CONFIGS_DIR / filename
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     with path.open("w", encoding="utf-8") as file:
         yaml.safe_dump(

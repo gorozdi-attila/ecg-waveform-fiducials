@@ -1,0 +1,39 @@
+experiment:
+  name: pan_tompkins_mitdb
+  description: Pan-Tompkins evaluation on MIT-BIH.
+
+dataset:
+  name: mitdb
+  annotation_extension: atr
+
+preprocessing:
+  enabled: true
+
+  steps:
+    - name: butterworth_filter
+      params:
+        low_cutoff: 0.5
+        high_cutoff: 40.0
+        order: 4
+
+    - name: z_score_normalize
+      params: {}
+
+detector:
+  name: pan_tompkins
+
+  params:
+    high_cutoff: 15.0
+    low_cutoff: 5.0
+    order: 4
+    window_size_s: 0.15
+    refractory_period_s: 0.2
+
+evaluation:
+  fiducials:
+    - R
+
+  tolerance_ms: 50.0
+
+output:
+  filename: pan_tompkins_mitdb.json

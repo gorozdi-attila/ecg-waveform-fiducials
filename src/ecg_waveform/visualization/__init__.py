@@ -1,7 +1,7 @@
 from .plot import (
     plot_amplitude_distribution,
     plot_baseline_wander,
-    plot_beat_overlays,
+    plot_average_beat,
     plot_detection_results,
     plot_fft,
     plot_poincare,
@@ -18,7 +18,7 @@ from .style import set_style
 __all__ = [
     "plot_amplitude_distribution",
     "plot_baseline_wander",
-    "plot_beat_overlays",
+    "plot_average_beat",
     "plot_detection_results",
     "plot_fft",
     "plot_poincare",
@@ -29,5 +29,5 @@ __all__ = [
     "plot_spectrogram",
     "plot_wavelet_scalogram",
     "set_style",
-    "with_axes"
+    "with_axes",
 ]

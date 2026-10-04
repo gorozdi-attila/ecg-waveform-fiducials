@@ -1,14 +1,18 @@
 steps:
 - name: median_baseline_filter
+  params:
+    window1_ms: 200
+    window2_ms: 600
 - name: notch_filter
   params:
     freq: 50.0
+    quality_factor: 30.0
 - name: notch_filter
   params:
     freq: 60.0
+    quality_factor: 30.0
 - name: butterworth_filter
   params:
     low_cutoff: 0.5
     high_cutoff: 40.0
     order: 4
-- name: savgol_smooth

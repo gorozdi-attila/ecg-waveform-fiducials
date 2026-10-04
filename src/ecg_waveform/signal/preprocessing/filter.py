@@ -101,7 +101,7 @@ def chebyshev1_filter(
         low_cutoff,
         high_cutoff,
         order,
-        ripple_db, 
+        ripple_db,
     )
 
 

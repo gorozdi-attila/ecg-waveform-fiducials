@@ -1,8 +1,13 @@
+from dataclasses import dataclass
+
 import numpy as np
 from scipy.stats import kurtosis
 
-from ecg_waveform.core import ECGAnnotation, ECGSignal
+from ecg_waveform.core import ECGSignal
 from ecg_waveform.utils import compute_baseline, compute_psd
+
+from .base import SignalQualityMetric
+from .registry import register_quality_metric
 
 
 def kurtosis_sqi(
@@ -75,7 +80,7 @@ def powerline_noise_ratio(
     nperseg: int | None = None,
     window: str = "hann",
     noverlap: int | None = None,
-):
+) -> float:
     band = (powerline_freq - bandwidth, powerline_freq + bandwidth)
 
     return band_power_ratio(
@@ -134,51 +139,94 @@ def flatline_ratio(
     return flat_samples / x.size
 
 
-def beat_agreement_sqi(
-    signal: ECGSignal,
-    peaks_a: ECGAnnotation,
-    peaks_b: ECGAnnotation,
-    tolerance_ms: float = 50.0,
-) -> float:
-    peaks_a = np.asarray(peaks_a.sample, dtype=np.int64)
-    peaks_b = np.asarray(peaks_b.sample, dtype=np.int64)
+@register_quality_metric("kurtosis_sqi")
+@dataclass(frozen=True, slots=True)
+class KurtosisSQI(SignalQualityMetric):
+    fisher: bool = True
 
-    if peaks_a.size == 0 and peaks_b.size == 0:
-        return float("nan")
-    if peaks_a.size == 0 or peaks_b.size == 0:
-        return 0.0
-
-    tolerance_samples = tolerance_ms / 1000.0 * signal.sample_rate
-
-    i, j, n_matched = 0, 0, 0
-    while i < peaks_a.size and j < peaks_b.size:
-        diff = peaks_a[i] - peaks_b[j]
-        if abs(diff) <= tolerance_samples:
-            n_matched += 1
-            i += 1
-            j += 1
-        elif diff > 0:
-            j += 1
-        else:
-            i += 1
-
-    return 2 * n_matched / (peaks_a.size + peaks_b.size)
+    def compute(self, signal: ECGSignal) -> float:
+        return kurtosis_sqi(signal, fisher=self.fisher)
 
 
-def rr_plausibility_ratio(
-    signal: ECGSignal,
-    peaks: ECGAnnotation,
-    min_bpm: float = 30.0,
-    max_bpm: float = 220.0,
-) -> float:
-    peaks = np.asarray(peaks.sample, dtype=np.int64)
+@register_quality_metric("band_power_ratio")
+@dataclass(frozen=True, slots=True)
+class BandPowerRatioSQI(SignalQualityMetric):
+    band: tuple[float, float | None]
+    reference_band: tuple[float, float | None] = (0.0, None)
+    nperseg: int | None = None
+    window: str = "hann"
+    noverlap: int | None = None
 
-    if peaks.size < 2:
-        return float("nan")
+    def compute(self, signal: ECGSignal) -> float:
+        return band_power_ratio(
+            signal,
+            band=self.band,
+            reference_band=self.reference_band,
+            nperseg=self.nperseg,
+            window=self.window,
+            noverlap=self.noverlap,
+        )
 
-    rr_ms = np.diff(peaks) / signal.sample_rate * 1000.0
-    instantaneous_bpm = 60000.0 / rr_ms
 
-    plausible = (instantaneous_bpm >= min_bpm) & (instantaneous_bpm <= max_bpm)
+@register_quality_metric("qrs_power_sqi")
+@dataclass(frozen=True, slots=True)
+class QRSPowerSQI(SignalQualityMetric):
+    qrs_band: tuple[float, float] = (5.0, 15.0)
+    reference_band: tuple[float, float] = (0.5, 40.0)
+    nperseg: int | None = None
+    window: str = "hann"
+    noverlap: int | None = None
 
-    return float(np.mean(plausible))
+    def compute(self, signal: ECGSignal) -> float:
+        return qrs_power_sqi(
+            signal,
+            qrs_band=self.qrs_band,
+            reference_band=self.reference_band,
+            nperseg=self.nperseg,
+            window=self.window,
+            noverlap=self.noverlap,
+        )
+
+
+@register_quality_metric("powerline_noise_ratio")
+@dataclass(frozen=True, slots=True)
+class PowerlineNoiseRatioSQI(SignalQualityMetric):
+    powerline_freq: float = 50.0
+    bandwidth: float = 1.0
+    nperseg: int | None = None
+    window: str = "hann"
+    noverlap: int | None = None
+
+    def compute(self, signal: ECGSignal) -> float:
+        return powerline_noise_ratio(
+            signal,
+            powerline_freq=self.powerline_freq,
+            bandwidth=self.bandwidth,
+            nperseg=self.nperseg,
+            window=self.window,
+            noverlap=self.noverlap,
+        )
+
+
+@register_quality_metric("baseline_wander_ratio")
+@dataclass(frozen=True, slots=True)
+class BaselineWanderRatioSQI(SignalQualityMetric):
+    window1_ms: int = 200
+    window2_ms: int = 600
+
+    def compute(self, signal: ECGSignal) -> float:
+        return baseline_wander_ratio(
+            signal, window1_ms=self.window1_ms, window2_ms=self.window2_ms
+        )
+
+
+@register_quality_metric("flatline_ratio")
+@dataclass(frozen=True, slots=True)
+class FlatlineRatioSQI(SignalQualityMetric):
+    slope_threshold: float = 1e-4
+    min_run_ms: float = 500.0
+
+    def compute(self, signal: ECGSignal) -> float:
+        return flatline_ratio(
+            signal, slope_threshold=self.slope_threshold, min_run_ms=self.min_run_ms
+        )

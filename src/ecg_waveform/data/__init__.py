@@ -1,4 +1,4 @@
-from .base import BaseDataLoader
+from .base_loader import BaseDataLoader
 from .mapper import FiducialMapper
 from .wfdb_loader import (
     AnnotationExtension,

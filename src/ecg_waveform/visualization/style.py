@@ -30,6 +30,15 @@ DEFAULT_RCPARAMS: dict = {
 
 
 def set_style(rc_params: dict | None = None) -> None:
+    """
+    Apply the Matplotlib plotting style and runtime configuration.
+
+    Parameters
+    ----------
+    rc_params : dict or None, optional
+        Matplotlib rcParams to apply. If None, the default project configuration is used.
+    """
+
     plt.style.use("seaborn-v0_8-whitegrid")
 
     plt.rcParams.update(rc_params or DEFAULT_RCPARAMS)

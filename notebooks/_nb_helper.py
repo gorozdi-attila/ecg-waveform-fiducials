@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pandas as pd
 from matplotlib.figure import Figure
 
@@ -18,11 +16,9 @@ def setup_notebook() -> None:
     pd.set_option("display.max_colwidth", None)
 
 
-def save_plot(fig: Figure, filename: str) -> Path:
+def save_plot(fig: Figure, filename: str) -> None:
     path = FIGURES_DIR / filename
     fig.savefig(path, bbox_inches="tight")
-
-    return path
 
 
 def compare_tables(tables: list[pd.DataFrame], names: list[str]) -> pd.DataFrame:

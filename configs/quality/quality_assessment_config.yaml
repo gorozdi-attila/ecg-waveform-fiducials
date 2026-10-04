@@ -1,0 +1,45 @@
+metrics:
+  - name: kurtosis_sqi
+    direction: higher_is_better
+    good_threshold: 5.0
+    acceptable_threshold: 2.0
+    weight: 1.0
+
+  - name: qrs_power_sqi
+    params:
+      qrs_band: [5.0, 15.0]
+      reference_band: [0.5, 40.0]
+    direction: higher_is_better
+    good_threshold: 0.4
+    acceptable_threshold: 0.2
+    weight: 1.5
+
+  - name: powerline_noise_ratio
+    label: powerline_50hz
+    params:
+      powerline_freq: 50.0
+    direction: lower_is_better
+    good_threshold: 0.05
+    acceptable_threshold: 0.15
+    weight: 1.0
+
+  - name: powerline_noise_ratio
+    label: powerline_60hz
+    params:
+      powerline_freq: 60.0
+    direction: lower_is_better
+    good_threshold: 0.05
+    acceptable_threshold: 0.15
+    weight: 1.0
+
+  - name: baseline_wander_ratio
+    direction: lower_is_better
+    good_threshold: 0.05
+    acceptable_threshold: 0.20
+    weight: 1.0
+
+  - name: flatline_ratio
+    direction: lower_is_better
+    good_threshold: 0.01
+    acceptable_threshold: 0.05
+    weight: 2.0
