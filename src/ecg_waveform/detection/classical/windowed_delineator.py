@@ -5,9 +5,9 @@ import numpy as np
 from ecg_waveform.core import ECGAnnotation, ECGSignal, Fiducials
 from ecg_waveform.signal.preprocessing import butterworth_filter
 
-from ..base_delineator import BaseDelineator
-from ..delineator_registry import register_delineator
-from ...common import first_below_persistent, moving_average
+from ..base_detector import BasePQRSTDelineator
+from ..registry import register_delineator
+from .common import first_below_persistent, moving_average
 
 
 @dataclass(slots=True)
@@ -21,7 +21,7 @@ class _WaveResult:
 
 @register_delineator("windowed")
 @dataclass(slots=True)
-class WindowedDelineator(BaseDelineator):
+class WindowedDelineator(BasePQRSTDelineator):
     qrs_low_cutoff: float = 5.0
     qrs_high_cutoff: float = 18.0
     qrs_order: int = 4
@@ -70,8 +70,6 @@ class WindowedDelineator(BaseDelineator):
             }
         )
 
-    
-
     def _delineate_qrs_samples(
         self,
         signal: ECGSignal,
@@ -79,7 +77,7 @@ class WindowedDelineator(BaseDelineator):
     ) -> tuple[int | None, int | None, int | None, int | None]:
         n = len(signal)
 
-        window = max(1, int(round(self.qrs_search_window_s * signal.sample_rate)))
+        window = max(1, int(self.qrs_search_window_s * signal.sample_rate))
 
         left = max(0, current_r - window)
         right = min(n, current_r + window + 1)
@@ -107,7 +105,7 @@ class WindowedDelineator(BaseDelineator):
 
         derivative = np.abs(np.gradient(segment))
 
-        smoothing = max(1, int(round(self.qrs_slope_smoothing_s * signal.sample_rate)))
+        smoothing = max(1, int(self.qrs_slope_smoothing_s * signal.sample_rate))
 
         derivative = moving_average(derivative, smoothing)
 
@@ -118,7 +116,7 @@ class WindowedDelineator(BaseDelineator):
 
         threshold = self.qrs_slope_threshold_ratio * max_slope
 
-        persistence = max(1, int(round(0.004 * signal.sample_rate)))
+        persistence = max(1, int(0.004 * signal.sample_rate))
 
         onset_local = first_below_persistent(
             derivative,
@@ -216,10 +214,7 @@ class WindowedDelineator(BaseDelineator):
                 noise=noise,
             )
 
-        smoothing = max(
-            1,
-            int(round(self.boundary_smoothing_s * signal.sample_rate)),
-        )
+        smoothing = max(1, int(self.boundary_smoothing_s * signal.sample_rate))
 
         envelope = moving_average(deviations, smoothing)
 
@@ -283,15 +278,17 @@ class WindowedDelineator(BaseDelineator):
         boundary_end: int,
         prev_r: int,
     ) -> tuple[int | None, int | None, int | None, int | None]:
-        window = int(round(self.p_search_before_s * signal.sample_rate))
+        window = int(self.p_search_before_s * signal.sample_rate)
 
-        gap = int(round(self.p_search_gap_s * signal.sample_rate))
+        gap = int(self.p_search_gap_s * signal.sample_rate)
 
         search_end = max(0, boundary_end - gap)
         search_start = max(0, search_end - window)
 
         if prev_r is not None:
-            min_start = prev_r + int(round(self.p_min_gap_from_prev_beat_s * signal.sample_rate))
+            min_start = prev_r + int(
+                self.p_min_gap_from_prev_beat_s * signal.sample_rate
+            )
 
             search_start = max(search_start, min_start)
 
@@ -304,9 +301,7 @@ class WindowedDelineator(BaseDelineator):
             search_end=search_end,
             amplitude_threshold_ratio=(self.p_amplitude_threshold_ratio),
             noise_multiplier=(self.p_noise_multiplier),
-            persistence=max(
-                1, int(round(self.p_boundary_persistence_s * signal.sample_rate))
-            ),
+            persistence=max(1, int(self.p_boundary_persistence_s * signal.sample_rate)),
         )
 
         return (
@@ -322,9 +317,9 @@ class WindowedDelineator(BaseDelineator):
         current_r: int,
         next_r: int | None,
     ) -> tuple[int | None, int | None, int | None, int | None]:
-        gap = int(round(self.t_search_gap_s * signal.sample_rate))
+        gap = int(self.t_search_gap_s * signal.sample_rate)
 
-        max_window = int(round(self.t_search_after_s * signal.sample_rate))
+        max_window = int(self.t_search_after_s * signal.sample_rate)
 
         search_start = boundary_start + gap
 
@@ -333,9 +328,9 @@ class WindowedDelineator(BaseDelineator):
         if next_r is not None:
             rr = next_r - current_r
 
-            rr_limit = current_r + int(round(self.t_min_rr_fraction * rr))
+            rr_limit = current_r + int(self.t_min_rr_fraction * rr)
 
-            qrs_guard = int(round(self.t_qrs_guard_s * signal.sample_rate))
+            qrs_guard = int(self.t_qrs_guard_s * signal.sample_rate)
 
             next_qrs_limit = next_r - qrs_guard
 
@@ -364,9 +359,7 @@ class WindowedDelineator(BaseDelineator):
             search_end=search_end,
             amplitude_threshold_ratio=(self.t_amplitude_threshold_ratio),
             noise_multiplier=(self.t_noise_multiplier),
-            persistence=max(
-                1, int(round(self.t_boundary_persistence_s * signal.sample_rate))
-            ),
+            persistence=max(1, int(self.t_boundary_persistence_s * signal.sample_rate)),
         )
 
         return (
@@ -375,10 +368,7 @@ class WindowedDelineator(BaseDelineator):
             result.offset,
         )
 
-    def delineate(
-        self, signal: ECGSignal,
-        r_samples: list[int]
-    ) -> list[ECGAnnotation]:
+    def delineate(self, signal: ECGSignal, r_samples: list[int]) -> list[ECGAnnotation]:
         if r_samples.ndim != 1:
             raise ValueError("r_samples must be one-dimensional.")
 

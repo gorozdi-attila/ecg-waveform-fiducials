@@ -6,8 +6,18 @@ import yaml
 from .paths import CONFIGS_DIR
 
 
-def load_yaml(filename: str) -> dict[str, Any]:
-    path: Path = CONFIGS_DIR / filename
+def _resolve(path: str | Path) -> Path:
+    path = Path(path)
+    if path.is_absolute():
+        return path
+    candidate = CONFIGS_DIR / path
+    if candidate.exists():
+        return candidate
+    return path if path.exists() else candidate
+
+
+def load_yaml(filename: str | Path) -> dict[str, Any]:
+    path = _resolve(filename)
 
     if not path.exists():
         raise FileNotFoundError(f"Configuration file not found at {path}")
@@ -24,8 +34,12 @@ def load_yaml(filename: str) -> dict[str, Any]:
     return data
 
 
-def save_yaml(filename: str, data: dict[str, Any]) -> None:
-    path = CONFIGS_DIR / filename
+def save_yaml(filename: str | Path, data: dict[str, Any]) -> None:
+    path = Path(filename)
+    
+    if not path.is_absolute():
+        path = CONFIGS_DIR / path
+
     path.parent.mkdir(parents=True, exist_ok=True)
 
     with path.open("w", encoding="utf-8") as file:

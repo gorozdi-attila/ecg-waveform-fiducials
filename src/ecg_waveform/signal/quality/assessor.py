@@ -9,15 +9,18 @@ from .report import QualityCriterion, QualityReport
 
 class SignalQualityAssessor:
     def __init__(self, criteria: list[QualityCriterion]) -> None:
+
         self.criteria = criteria
         self._metrics = [
             build_quality_metric(c.metric_name, c.metric_params) for c in criteria
         ]
 
     def __repr__(self) -> str:
+
         return f"SignalQualityAssessor(criteria={[c.key for c in self.criteria]})"
 
     def assess(self, signal: ECGSignal) -> QualityReport:
+
         values: dict[str, float] = {}
         levels: dict[str, Any] = {}
         weights: dict[str, float] = {}
@@ -34,12 +37,14 @@ class SignalQualityAssessor:
     def _parse_threshold(
         raw: float | list[float] | None,
     ) -> float | tuple[float, float] | None:
+
         if isinstance(raw, list):
             return tuple(raw)
         return raw
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> "SignalQualityAssessor":
+
         criteria = [
             QualityCriterion(
                 metric_name=m["name"],

@@ -1,12 +1,20 @@
+import os
 from pathlib import Path
+
+_ENV_ROOT = "ECG_WAVEFORM_ROOT"
 
 
 def _project_root() -> Path:
-    current = Path(__file__).resolve()
-    for parent in current.parents:
+    env = os.environ.get(_ENV_ROOT)
+    
+    if env:
+        return Path(env).expanduser().resolve()
+
+    for parent in Path(__file__).resolve().parents:
         if (parent / "pyproject.toml").exists():
             return parent
-    raise FileNotFoundError("Could not locate project root (pyproject.toml not found).")
+
+    return Path.cwd()
 
 
 PROJECT_ROOT: Path = _project_root()

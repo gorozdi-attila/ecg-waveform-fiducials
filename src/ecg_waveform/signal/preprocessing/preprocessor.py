@@ -1,3 +1,4 @@
+import inspect
 from collections.abc import Callable
 from functools import partial
 from typing import Any
@@ -59,6 +60,11 @@ def build_pipeline(step_configs: list[dict[str, Any]]) -> list[PreprocessingStep
                 f"Available steps: {sorted(STEP_REGISTRY)}"
             )
 
+        try:
+            inspect.signature(STEP_REGISTRY[name]).bind_partial(None, **params)
+        except TypeError as exc:
+            raise TypeError(f"Invalid parameters for step '{name}': {exc}") from exc
+
         steps.append(partial(STEP_REGISTRY[name], **params))
 
     return steps
@@ -85,11 +91,15 @@ class Preprocessor:
 
     def run_stepwise(self, signal: ECGSignal) -> dict[str, ECGSignal]:
         stages: dict[str, ECGSignal] = {"raw": signal}
+        seen: dict[str, int] = {}
         current = signal
 
         for step_config, step in zip(self.step_configs, self.steps):
+            name = step_config["name"]
+            seen[name] = seen.get(name, 0) + 1
+            key = name if seen[name] == 1 else f"{name}#{seen[name]}"
             current = step(current)
-            stages[step_config["name"]] = current
+            stages[key] = current
 
         return stages
 

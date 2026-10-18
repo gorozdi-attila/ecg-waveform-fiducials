@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
-from dataclasses import asdict, is_dataclass
 from enum import Enum, IntEnum
-from typing import Any
 
-from ecg_waveform.core import ECGSignal
+from ecg_waveform.core import Configurable, ECGSignal
 
 
 class Direction(str, Enum):
@@ -18,25 +16,8 @@ class QualityLevel(IntEnum):
     GOOD = 2
 
 
-class SignalQualityMetric(ABC):
+class SignalQualityMetric(Configurable, ABC):
     __slots__ = ()
-
-    @property
-    def name(self) -> str:
-        return type(self).__name__
-
-    def get_params(self) -> dict[str, Any]:
-        if is_dataclass(self):
-            return asdict(self)
-        return {
-            k: v
-            for k, v in vars(self).items()
-            if not k.startswith("_") and not callable(v)
-        }
 
     @abstractmethod
     def compute(self, signal: ECGSignal) -> float: ...
-
-    def __repr__(self) -> str:
-        params = ", ".join(f"{k}={v!r}" for k, v in self.get_params().items())
-        return f"{self.name}({params})"

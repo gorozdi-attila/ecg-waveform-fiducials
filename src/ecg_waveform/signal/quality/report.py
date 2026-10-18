@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -21,7 +22,7 @@ class QualityCriterion:
         return self.label or self.metric_name
 
     def classify(self, value: float) -> QualityLevel | None:
-        if value != value:
+        if math.isnan(value):
             return None
 
         if self.good_threshold is None and self.acceptable_threshold is None:

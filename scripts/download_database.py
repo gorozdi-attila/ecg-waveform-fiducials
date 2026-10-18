@@ -32,7 +32,7 @@ def download_database(
         print(f"Done: {output_dir.resolve()}")
         return True
 
-    except Exception as e:
+    except (OSError, wfdb.DownloadError) as e:
         shutil.rmtree(output_dir, ignore_errors=True)
         print(f"Failed to download {database_name}: {e}", file=sys.stderr)
         return False

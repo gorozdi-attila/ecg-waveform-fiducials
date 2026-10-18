@@ -5,7 +5,6 @@ import numpy as np
 
 from ecg_waveform.core import ECGAnnotation, ECGSignal, Fiducials
 
-
 QT_REFERENCE_RR = 60.0 / 70.0
 
 
@@ -115,6 +114,7 @@ class NoiseComponent(Flag):
 
 
 def _validate_probability(name: str, value: float) -> None:
+
     if not 0.0 <= value <= 1.0:
         raise ValueError(f"{name} must be between 0 and 1")
 
@@ -125,6 +125,7 @@ def _validate_range(
     minimum: float | None = None,
     strictly_positive: bool = False,
 ) -> None:
+
     if len(value) != 2:
         raise ValueError(f"{name} must contain exactly two values")
 
@@ -136,9 +137,8 @@ def _validate_range(
     if strictly_positive:
         if low <= 0 or high <= 0:
             raise ValueError(f"{name} must contain positive values")
-    elif minimum is not None:
-        if low < minimum:
-            raise ValueError(f"{name} values must be >= {minimum}")
+    elif minimum is not None and low < minimum:
+        raise ValueError(f"{name} values must be >= {minimum}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -235,6 +235,9 @@ class NoiseConfig:
         return bool(self.components & component)
 
 
+_DEFAULT_NOISE_CONFIG = NoiseConfig()
+
+
 def _add_baseline_wander(
     signal: np.ndarray,
     time: np.ndarray,
@@ -300,10 +303,7 @@ def _add_electrode_motion_artifact(
         if rng.random() > config.electrode_motion_probability:
             continue
 
-        center = rng.uniform(
-            0.0,
-            duration,
-        )
+        center = rng.uniform(0.0, duration)
 
         amplitude = rng.uniform(*config.electrode_motion_amplitude)
 
@@ -313,15 +313,9 @@ def _add_electrode_motion_artifact(
 
         artifact_duration = rng.uniform(*config.electrode_motion_duration)
 
-        rise = artifact_duration * rng.uniform(
-            0.15,
-            0.35,
-        )
+        rise = artifact_duration * rng.uniform(0.15, 0.35)
 
-        decay = artifact_duration * rng.uniform(
-            0.5,
-            1.5,
-        )
+        decay = artifact_duration * rng.uniform(0.5, 1.5)
 
         dt = time - center
 
@@ -361,22 +355,13 @@ def _add_motion_artifact(
         if rng.random() > config.motion_event_probability:
             continue
 
-        center = rng.uniform(
-            0.0,
-            duration,
-        )
+        center = rng.uniform(0.0, duration)
 
         event_duration = rng.uniform(*config.motion_event_duration)
 
-        start = max(
-            0.0,
-            center - event_duration / 2.0,
-        )
+        start = max(0.0, center - event_duration / 2.0)
 
-        end = min(
-            duration,
-            center + event_duration / 2.0,
-        )
+        end = min(duration, center + event_duration / 2.0)
 
         mask = (time >= start) & (time <= end)
 
@@ -391,18 +376,11 @@ def _add_motion_artifact(
 
         frequency = rng.uniform(*config.motion_frequency)
 
-        phase = rng.uniform(
-            0.0,
-            2.0 * np.pi,
-        )
+        phase = rng.uniform(0.0, 2.0 * np.pi)
 
         oscillation = np.sin(2.0 * np.pi * frequency * local_time + phase)
 
-        random_component = rng.normal(
-            0.0,
-            0.2,
-            size=np.count_nonzero(mask),
-        )
+        random_component = rng.normal(0.0, 0.2, size=np.count_nonzero(mask))
 
         artifact = (
             config.motion_amplitude
@@ -421,9 +399,7 @@ def _add_white_noise(
     config: NoiseConfig,
 ) -> None:
     signal += rng.normal(
-        0,
-        config.white_noise_std * config.noise_level,
-        size=time.shape,
+        0, config.white_noise_std * config.noise_level, size=time.shape
     )
 
 
@@ -460,18 +436,10 @@ def _add_noise(
 
     for component, handler in _NOISE_COMPONENT_HANDLER.items():
         if config.has(component):
-            handler(
-                signal,
-                time,
-                rng,
-                config,
-            )
+            handler(signal, time, rng, config)
 
     if config.has(NoiseComponent.SATURATION):
-        _apply_saturation(
-            signal,
-            config,
-        )
+        _apply_saturation(signal, config)
 
     return signal
 
@@ -592,7 +560,7 @@ def simulate_ecg(
     respiration_rate_hz: float = 0.25,
     respiration_amplitude_modulation: float = 0.05,
     morphology_jitter_std: float = 0.03,
-    noise: NoiseConfig | None = NoiseConfig(),
+    noise: NoiseConfig | None = _DEFAULT_NOISE_CONFIG,
     seed: int | None = 42,
 ) -> ECGSignal:
     if duration_sec <= 0.0:
@@ -628,7 +596,7 @@ def simulate_ecg(
 
     rng = np.random.default_rng(seed)
 
-    n_samples = int(round(duration_sec * sample_rate))
+    n_samples = int(duration_sec * sample_rate)
 
     if n_samples < 1:
         raise ValueError(
@@ -639,17 +607,11 @@ def simulate_ecg(
 
     mean_rr = 60.0 / heart_rate_bpm
 
-    signal = np.zeros(
-        n_samples,
-        dtype=np.float64,
-    )
+    signal = np.zeros(n_samples, dtype=np.float64)
 
     points: dict[Fiducials, list[int]] = {fiducial: [] for fiducial in Fiducials}
 
-    respiration_phase = rng.uniform(
-        0.0,
-        2.0 * np.pi,
-    )
+    respiration_phase = rng.uniform(0.0, 2.0 * np.pi)
 
     beat_times, beat_rrs = _generate_rr_intervals(
         duration_sec,
@@ -704,16 +666,13 @@ def simulate_ecg(
 
             fiducial_time = beat_time + offset
 
-            sample = int(round(fiducial_time * sample_rate))
+            sample = int(fiducial_time * sample_rate)
 
             if 0 <= sample < n_samples:
                 points[fiducial].append(sample)
 
     annotation_points = {
-        fiducial: np.asarray(
-            samples,
-            dtype=np.int64,
-        )
+        fiducial: np.asarray(samples, dtype=np.int64)
         for fiducial, samples in points.items()
     }
 

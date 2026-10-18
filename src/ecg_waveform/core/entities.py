@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
@@ -21,6 +21,17 @@ class Fiducials(str, Enum):
     T_PEAK = "T"
     T_OFFSET = "]"
 
+def _as_symbols(symbols: str | Fiducials | Iterable[str | Fiducials]) -> list[str]:
+    if isinstance(symbols, (str, Fiducials)):
+        symbols = [symbols]
+    return [s.value if isinstance(s, Fiducials) else str(s) for s in symbols]
+
+def _frozen(array: np.ndarray) -> np.ndarray:
+    array = np.asarray(array)
+    if array.flags.writeable:
+        array = array.copy()
+        array.flags.writeable = False
+    return array
 
 @dataclass(frozen=True, eq=False, repr=False)
 class ECGAnnotation:
@@ -28,6 +39,9 @@ class ECGAnnotation:
     sample: np.ndarray
 
     def __post_init__(self):
+        object.__setattr__(self, "symbol", _frozen(self.symbol))
+        object.__setattr__(self, "sample", _frozen(self.sample))
+
         if self.symbol.ndim != 1 or self.sample.ndim != 1:
             raise ValueError("symbol and sample must be 1-dimensional arrays")
 
@@ -75,9 +89,7 @@ class ECGAnnotation:
         return cls(symbol=symbols[order], sample=samples[order])
 
     def filter(self, symbols: str | list[str]) -> "ECGAnnotation":
-        symbols = [symbols] if isinstance(symbols, str) else symbols
-
-        mask = np.isin(self.symbol, symbols)
+        mask = np.isin(self.symbol, _as_symbols(symbols))
 
         return ECGAnnotation(
             symbol=self.symbol[mask],
@@ -112,6 +124,8 @@ class ECGSignal:
     annotation: ECGAnnotation | None = None
 
     def __post_init__(self):
+        object.__setattr__(self, "sample", _frozen(self.sample))
+
         if self.sample.ndim != 1:
             raise ValueError("sample must be a 1-dimensional array")
 

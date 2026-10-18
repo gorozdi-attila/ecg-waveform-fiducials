@@ -1,7 +1,8 @@
 from .plot import (
+    highlight_wave_bounds,
     plot_amplitude_distribution,
-    plot_baseline_wander,
     plot_average_beat,
+    plot_baseline_wander,
     plot_detection_results,
     plot_fft,
     plot_poincare,
@@ -16,9 +17,10 @@ from .plot import (
 from .style import set_style
 
 __all__ = [
+    "highlight_wave_bounds",
     "plot_amplitude_distribution",
-    "plot_baseline_wander",
     "plot_average_beat",
+    "plot_baseline_wander",
     "plot_detection_results",
     "plot_fft",
     "plot_poincare",

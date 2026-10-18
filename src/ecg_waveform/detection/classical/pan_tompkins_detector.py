@@ -6,8 +6,8 @@ from scipy.signal import find_peaks
 from ecg_waveform.core import ECGAnnotation, ECGSignal, Fiducials
 from ecg_waveform.signal.preprocessing import butterworth_filter
 
-from ..base_detector import BaseDetector
-from ..detector_registry import register_detector
+from ..base_detector import BasePQRSTDetector
+from ..registry import register_detector
 
 
 @dataclass
@@ -21,7 +21,7 @@ class _Preprocessing:
 
 @register_detector("pan_tompkins_plus_plus")
 @dataclass(repr=False, slots=True)
-class PanTompkinsPlusPlusDetector(BaseDetector):
+class PanTompkinsPlusPlusDetector(BasePQRSTDetector):
     low_cutoff: float = 5.0
     high_cutoff: float = 18.0
     order: int = 4
@@ -158,6 +158,7 @@ class PanTompkinsPlusPlusDetector(BaseDetector):
         bandpassed: np.ndarray,
         integrated: np.ndarray,
         sample_rate: int,
+        trace: dict[str, list] | None = None,
     ) -> np.ndarray:
         refractory_period = int(self.refractory_period_s * sample_rate)
         candidate_peaks, _ = find_peaks(integrated, distance=refractory_period)
@@ -190,6 +191,7 @@ class PanTompkinsPlusPlusDetector(BaseDetector):
 
         for idx, peak in enumerate(candidate_peaks):
             value = float(integrated[peak])
+            thr1_used = THR1
             accept = False
             accepted_location = peak
             rule = 1
@@ -250,9 +252,18 @@ class PanTompkinsPlusPlusDetector(BaseDetector):
                         rule = 2
                         accepted_location = search_start + local_max
 
-            if accept and qrs_peaks:
-                if accepted_location - qrs_peaks[-1] < refractory_period:
-                    accept = False
+            if (
+                accept
+                and qrs_peaks
+                and accepted_location - qrs_peaks[-1] < refractory_period
+            ):
+                accept = False
+
+            if trace is not None:
+                trace.setdefault("candidate", []).append(int(peak))
+                trace.setdefault("thr1", []).append(float(thr1_used))
+                trace.setdefault("accepted", []).append(bool(accept))
+                trace.setdefault("rule", []).append(rule)
 
             if accept:
                 refined = self._refine_r_peak(

@@ -6,9 +6,11 @@ from ecg_waveform.core import ECGRecord
 
 
 class BaseDataLoader(ABC):
-    def __init__(self, dataset_name: str, dataset_root: Path = DATA_DIR) -> None:
+    def __init__(self, dataset_name: str, dataset_root: Path | None = None) -> None:
         self.dataset_name: str = dataset_name
-        self.dataset_root: Path = dataset_root / dataset_name
+        self.dataset_root: Path = (
+            dataset_root if dataset_root is not None else DATA_DIR
+        ) / dataset_name
 
     @abstractmethod
     def list_records(self) -> list[str]: ...
